@@ -38,7 +38,8 @@
   <p class="sub">A prototype experiment: reconstruct each task object from ONE image with SAM 3D Objects,
   register the reconstruction into the demo world, and sample a fixed set of canonical points in the
   object's own frame — the same physical points in every demo, instead of per-recording keypoint picks.</p>
-  <p><a class="btn" href="canonical_points_viewer.html">open the viewer →</a></p>
+  <p><a class="btn" href="canonical_points_viewer.html">open the viewer →</a>
+     <a class="btn" href="canonical_points_seq_viewer.html">open the frame-slider viewer →</a></p>
 
   <h2>Why</h2>
   <p>The V1 pipeline selects object keypoints per recording from a segmentation mask, so "the cup's 20
@@ -120,7 +121,11 @@
   <ul>
     <li>Five toggleable layers: true-color reconstructions, canonical points, V1 triangulated keypoints,
       MPS hand landmarks, fused scene.</li>
-    <li>Drag = rotate, scroll = zoom, shift-drag or right-drag = pan.</li>
+    <li>The frame-slider variant steps through all 566 manipulation-window frames — per-frame hand
+      landmarks, V1 keypoints, grasp state, and the moving egocentric camera frustum (slider, play,
+      ←/→ keys). The objects and canonical points stay put by the latched-anchor convention; the hand
+      and camera are what move.</li>
+    <li>Drag = rotate, scroll = zoom, shift-drag or right-drag = pan; touch and pinch-zoom supported.</li>
   </ul>
 
   <p class="foot">Built with <code>scripts/proto_canonical_points.py</code> (branch

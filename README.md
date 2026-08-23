@@ -25,7 +25,7 @@ each demo's registered camera frustums and head trajectory.
 | V1 sparse entity points | [pcd_obs_viewer_demo000.html](pcd_obs_viewer_demo000.html) | [method_pcd_obs.html](method_pcd_obs.html) |
 | V2 dense scene clouds | [grey](pcd_dense_viewer_demo000.html) · [height-shaded](pcd_dense_shaded_viewer_demo000.html) | [method_pcd_dense.html](method_pcd_dense.html) |
 | V3 fused scene reconstruction | [height-shaded](scene_recon_viewer_demo000.html) · [true color](scene_recon_color_viewer_demo000.html) | [method_scene_recon.html](method_scene_recon.html) |
-| Canonical points from SAM 3D (prototype) | [canonical_points_viewer.html](canonical_points_viewer.html) | [method_canonical_points.html](method_canonical_points.html) |
+| Canonical points from SAM 3D (prototype) | [static](canonical_points_viewer.html) · [frame slider](canonical_points_seq_viewer.html) | [method_canonical_points.html](method_canonical_points.html) |
 
 Drag to rotate, scroll to zoom, shift-drag (or right-drag) to pan; use the slider to step through
 demos, or "show all demos" to overlay every pose. Each page is a single self-contained HTML file
