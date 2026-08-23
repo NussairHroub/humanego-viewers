@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HumanEgo — 3D camera-pose viewers</title>
+<title>HumanEgo — 3D viewers</title>
 <style>
   :root{--bg:#edece8;--card:#fff;--ink:#22201c;--muted:#6b6862;--line:#d9d7d1;--accent:#2a78d6}
   @media (prefers-color-scheme:dark){
@@ -12,34 +12,93 @@
        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
   .wrap{max-width:720px;margin:0 auto;padding:56px 22px 72px}
   h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
-  .sub{color:var(--muted);margin:0 0 30px;font-size:15px}
+  h2{font-size:15px;margin:34px 0 12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .sub{color:var(--muted);margin:0 0 8px;font-size:15px}
   .grid{display:grid;gap:13px}
-  a.card{display:flex;align-items:baseline;justify-content:space-between;gap:14px;text-decoration:none;
-         color:inherit;background:var(--card);border:1px solid var(--line);border-radius:12px;
-         padding:17px 20px;transition:box-shadow .15s ease,transform .15s ease,border-color .15s ease}
-  a.card:hover{box-shadow:0 5px 20px rgba(0,0,0,.09);transform:translateY(-1px);border-color:#bdbbb4}
-  .card .name{font-size:18px;font-weight:600}
-  .card .meta{color:var(--muted);font-size:13.5px;margin-top:3px}
-  .card .go{color:var(--accent);font-weight:600;white-space:nowrap}
-  .foot{color:var(--muted);font-size:12.5px;margin-top:32px;border-top:1px solid var(--line);padding-top:16px}
+  .card{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+        background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:16px 20px;transition:box-shadow .15s ease,transform .15s ease,border-color .15s ease}
+  .card:hover{box-shadow:0 5px 20px rgba(0,0,0,.09);transform:translateY(-1px);border-color:#bdbbb4}
+  .card .name{font-size:17px;font-weight:600}
+  .card .meta{color:var(--muted);font-size:13.5px;margin-top:3px;max-width:400px}
+  .card .links{display:flex;flex-direction:column;align-items:flex-end;gap:5px;white-space:nowrap;flex-shrink:0}
+  .links a{color:var(--accent);text-decoration:none;font-weight:600;font-size:14.5px}
+  .links a:hover{text-decoration:underline}
+  .links a.how{font-weight:500;font-size:13px;opacity:.85}
+  @media (max-width:540px){
+    .card{flex-direction:column;align-items:flex-start}
+    .card .links{flex-direction:row;align-items:baseline;gap:16px;flex-wrap:wrap}
+  }
+  .foot{color:var(--muted);font-size:12.5px;margin-top:36px;border-top:1px solid var(--line);padding-top:16px}
   .foot a{color:var(--accent)}
 </style></head><body>
 <div class="wrap">
-  <h1>HumanEgo — 3D camera-pose viewers</h1>
-  <p class="sub">Interactive 3D views of egocentric Aria demos: the fused semidense room point cloud
-  plus each demo's registered camera frustums and head trajectory. Drag to rotate, scroll to zoom,
-  shift-drag to pan, and use the slider to step through demos.</p>
+  <h1>HumanEgo — 3D viewers</h1>
+  <p class="sub">Interactive 3D views of egocentric Aria demos: registered camera trajectories, room
+  point clouds and reconstructions, and the point-cloud observations fed to the manipulation policy.
+  Drag to rotate, scroll to zoom, shift-drag to pan. Each construction has a page explaining how it was
+  generated.</p>
+
+  <h2>Camera-pose viewers</h2>
   <div class="grid">
-    <a class="card" href="cup_plate_02_viewer.html">
-      <span><span class="name">cup_plate_02</span><div class="meta">64 demos</div></span>
-      <span class="go">open&nbsp;→</span></a>
-    <a class="card" href="serve_bread_viewer.html">
+    <div class="card">
+      <span><span class="name">cup_plate_02</span>
+        <div class="meta">64 demos · semidense room cloud · RealSense test-camera overlay</div></span>
+      <span class="links"><a href="cup_plate_02_viewer.html">open →</a>
+        <a class="how" href="method_pose_viewer.html">how it's made</a></span>
+    </div>
+    <div class="card">
       <span><span class="name">serve_bread</span><div class="meta">61 demos</div></span>
-      <span class="go">open&nbsp;→</span></a>
-    <a class="card" href="water_flowers_viewer.html">
+      <span class="links"><a href="serve_bread_viewer.html">open →</a>
+        <a class="how" href="method_pose_viewer.html">how it's made</a></span>
+    </div>
+    <div class="card">
       <span><span class="name">water_flowers</span><div class="meta">61 demos</div></span>
-      <span class="go">open&nbsp;→</span></a>
+      <span class="links"><a href="water_flowers_viewer.html">open →</a>
+        <a class="how" href="method_pose_viewer.html">how it's made</a></span>
+    </div>
   </div>
+
+  <h2>cup_plate_02 — room reconstructions</h2>
+  <div class="grid">
+    <div class="card">
+      <span><span class="name">Room reconstruction</span>
+        <div class="meta">dense true-color MoGe reconstruction under the same 64 demos + test camera</div></span>
+      <span class="links"><a href="cup_plate_02_recon_viewer.html">open →</a>
+        <a class="how" href="method_room_recon.html">how it's made</a></span>
+    </div>
+    <div class="card">
+      <span><span class="name">True-color semidense cloud</span>
+        <div class="meta">the SLAM cloud with per-point colors sampled from the video</div></span>
+      <span class="links"><a href="cup_plate_02_color_viewer.html">open →</a>
+        <a class="how" href="method_color_cloud.html">how it's made</a></span>
+    </div>
+  </div>
+
+  <h2>cup_plate_02 — policy observation clouds (demo 000)</h2>
+  <div class="grid">
+    <div class="card">
+      <span><span class="name">V1 · sparse entity points</span>
+        <div class="meta">hand landmarks + tracked object keypoints — the policy's per-frame input</div></span>
+      <span class="links"><a href="pcd_obs_viewer_demo000.html">open →</a>
+        <a class="how" href="method_pcd_obs.html">how it's made</a></span>
+    </div>
+    <div class="card">
+      <span><span class="name">V2 · dense scene clouds</span>
+        <div class="meta">V1 + MoGe-lifted scene points, per frame</div></span>
+      <span class="links"><a href="pcd_dense_viewer_demo000.html">open (grey) →</a>
+        <a href="pcd_dense_shaded_viewer_demo000.html">open (height-shaded) →</a>
+        <a class="how" href="method_pcd_dense.html">how it's made</a></span>
+    </div>
+    <div class="card">
+      <span><span class="name">V3 · fused scene reconstruction</span>
+        <div class="meta">one static fused workspace scene shown at every timestep</div></span>
+      <span class="links"><a href="scene_recon_viewer_demo000.html">open (height-shaded) →</a>
+        <a href="scene_recon_color_viewer_demo000.html">open (true color) →</a>
+        <a class="how" href="method_scene_recon.html">how it's made</a></span>
+    </div>
+  </div>
+
   <p class="foot">Each page is a self-contained WebGL viewer (with a Canvas-2D fallback) — no install
   needed. serve_bread and water_flowers use the
   <a href="https://huggingface.co/datasets/Leo-TX/HumanEgo">HumanEgo</a> dataset; cup_plate_02 is from

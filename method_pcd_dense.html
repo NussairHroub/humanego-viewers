@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Method — V2 dense observation clouds</title>
+<style>
+  :root{--bg:#edece8;--card:#fff;--ink:#22201c;--muted:#6b6862;--line:#d9d7d1;--accent:#2a78d6;--code:#e7e5df}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#1a1a18;--card:#242320;--ink:#e9e7e2;--muted:#a09d95;--line:#35342f;--accent:#6da7ec;--code:#2e2d29}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:44px 22px 72px}
+  .crumb{font-size:13.5px;margin:0 0 26px}
+  .crumb a{color:var(--accent);text-decoration:none}
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:17px;margin:34px 0 10px}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+  a.btn{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:9px 15px;color:var(--accent);font-weight:600;text-decoration:none;font-size:14.5px;margin:0 8px 8px 0}
+  figure{margin:18px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 16px 10px;overflow-x:auto}
+  figcaption{color:var(--muted);font-size:12.5px;margin-top:8px}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  ol,ul{padding-left:22px;margin:10px 0}
+  li{margin:5px 0}
+  p{margin:10px 0}
+  code{background:var(--code);border-radius:5px;padding:1px 5px;font-size:.92em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .tablewrap{border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--card);margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:8px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+  thead th{border-top:0;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+</style></head><body>
+<div class="wrap">
+  <p class="crumb"><a href="index.html">← all viewers</a></p>
+  <h1>V2 dense observation clouds</h1>
+  <p class="sub">V1's sparse entity points plus a dense scene point cloud lifted from the egocentric RGB
+  with monocular metric depth — so the policy also sees the table and surroundings, not just the tracked
+  entities.</p>
+  <p>
+    <a class="btn" href="pcd_dense_viewer_demo000.html">open (flat grey scene) →</a>
+    <a class="btn" href="pcd_dense_shaded_viewer_demo000.html">open (height-shaded scene) →</a>
+  </p>
+
+  <h2>Pipeline</h2>
+  <figure>
+    <svg viewBox="0 0 760 158" role="img" aria-label="Each RGB frame goes through MoGe-2 depth, a per-frame metric scale fit against SLAM anchors, arm masking with a sphere crop, and farthest-point sampling down to 1024 scene points appended to the V1 entities.">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.3">
+        <rect x="8"   y="30" width="108" height="58" rx="8"/>
+        <rect x="164" y="30" width="118" height="58" rx="8"/>
+        <rect x="330" y="30" width="128" height="58" rx="8"/>
+        <rect x="506" y="30" width="122" height="58" rx="8"/>
+        <rect x="264" y="116" width="260" height="34" rx="8"/>
+      </g>
+      <rect x="676" y="30" width="76" height="58" rx="8" fill="none" stroke="#2a78d6" stroke-width="2"/>
+      <g fill="currentColor" font-size="12" text-anchor="middle">
+        <text x="62"  y="53">RGB frame</text><text x="62" y="70" font-size="11" opacity=".75">rectified</text>
+        <text x="223" y="53">MoGe-2</text><text x="223" y="70" font-size="11" opacity=".75">metric depth</text>
+        <text x="394" y="53">scale fit</text><text x="394" y="70" font-size="11" opacity=".75">median of ratios</text>
+        <text x="567" y="53">mask + crop</text><text x="567" y="70" font-size="11" opacity=".75">arm out · 0.6 m</text>
+        <text x="714" y="53">FPS</text><text x="714" y="70" font-size="11" opacity=".75">1024 pts</text>
+        <text x="394" y="137" font-size="11">SLAM anchors: semidense + object keypoints</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.3" fill="none">
+        <line x1="116" y1="59" x2="162" y2="59" marker-end="url(#ar)"/>
+        <line x1="282" y1="59" x2="328" y2="59" marker-end="url(#ar)"/>
+        <line x1="458" y1="59" x2="504" y2="59" marker-end="url(#ar)"/>
+        <line x1="628" y1="59" x2="674" y2="59" marker-end="url(#ar)"/>
+        <line x1="394" y1="116" x2="394" y2="90" marker-end="url(#ar)"/>
+      </g>
+    </svg>
+    <figcaption>The scene points join the V1 entity points as a fifth entity ("scene", all-zero one-hot),
+    giving N = 1152 points per frame.</figcaption>
+  </figure>
+
+  <h2>How it works</h2>
+  <ol>
+    <li><strong>Depth:</strong> MoGe-2 predicts metric depth from each rectified egocentric RGB frame.</li>
+    <li><strong>Metric scale correction:</strong> monocular "metric" depth still drifts per frame, so each frame's
+      depth is rescaled by the median ratio between predicted depth and known 3D anchors projected into the
+      frame — the MPS semidense SLAM points <em>and</em> the triangulated object keypoints. Near-field anchors
+      (z&nbsp;&lt;&nbsp;1.5&nbsp;m) are preferred, so the fit is set by the workspace rather than the far walls.
+      Typical scale on demo 000: 0.821&nbsp;±&nbsp;0.039.</li>
+    <li><strong>Cleanup:</strong> the human arm is removed with the segmentation mask; points are cropped to a
+      0.6&nbsp;m sphere around the static anchor object (the workspace).</li>
+    <li><strong>Sampling:</strong> farthest-point sampling keeps 1024 scene points; they are appended to the 128
+      V1 entity points with a zero entity one-hot, leaving the feature schema unchanged.</li>
+  </ol>
+
+  <h2>Quality</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Object-keypoint → scene-surface distance (median, after near-field scale fit)</td><td>≈ 16–23 mm across QA'd recordings</td></tr>
+      <tr><td>Same check before the near-field fix (scale set by far walls)</td><td>up to 203 mm — the motivation for anchoring on the workspace</td></tr>
+      <tr><td>Known artifact</td><td>cm-scale MoGe warp on the textureless black tabletop (visible in the height-shaded variant)</td></tr>
+    </tbody>
+  </table></div>
+  <p>The height-shaded variant colors scene points by height above the fitted table plane — it is the
+  version that made the tabletop warp visible in the first place, which is exactly what it is for.</p>
+
+  <p class="foot">Built with <code>preprocess/PointCloudGen.py --dense</code> (writes per-frame
+  <code>pcd_dense.npz</code>), MoGe-2 for depth, and the same viewer pair
+  <code>extract_pcd_seq.py</code> + <code>make_pcd_viewer.py</code>. At robot inference the scene points come
+  from the RealSense depth stream instead of MoGe — same contract, real depth.</p>
+</div>
+</body></html>

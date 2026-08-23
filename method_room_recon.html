@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Method — room-scale reconstruction</title>
+<style>
+  :root{--bg:#edece8;--card:#fff;--ink:#22201c;--muted:#6b6862;--line:#d9d7d1;--accent:#2a78d6;--code:#e7e5df}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#1a1a18;--card:#242320;--ink:#e9e7e2;--muted:#a09d95;--line:#35342f;--accent:#6da7ec;--code:#2e2d29}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:44px 22px 72px}
+  .crumb{font-size:13.5px;margin:0 0 26px}
+  .crumb a{color:var(--accent);text-decoration:none}
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:17px;margin:34px 0 10px}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+  a.btn{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:9px 15px;color:var(--accent);font-weight:600;text-decoration:none;font-size:14.5px;margin:0 8px 8px 0}
+  figure{margin:18px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 16px 10px;overflow-x:auto}
+  figcaption{color:var(--muted);font-size:12.5px;margin-top:8px}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  ol,ul{padding-left:22px;margin:10px 0}
+  li{margin:5px 0}
+  p{margin:10px 0}
+  code{background:var(--code);border-radius:5px;padding:1px 5px;font-size:.92em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .tablewrap{border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--card);margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:8px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+  thead th{border-top:0;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+</style></head><body>
+<div class="wrap">
+  <p class="crumb"><a href="index.html">← all viewers</a></p>
+  <h1>Room-scale reconstruction</h1>
+  <p class="sub">The cup_plate_02 pose viewer rebuilt on top of a dense, true-color reconstruction of the
+  whole room — same 64 demo trajectories and RealSense test camera, but real surfaces instead of the
+  sparse SLAM speckle.</p>
+  <p><a class="btn" href="cup_plate_02_recon_viewer.html">open the viewer →</a></p>
+
+  <h2>Pipeline</h2>
+  <figure>
+    <svg viewBox="0 0 760 158" role="img" aria-label="All frames of demo 000, including the walk-in, are lifted with MoGe-2 depth carrying per-pixel color, scale-anchored to SLAM, and fused into a 1.5 cm voxel grid with a distinct-view support filter, producing 211 thousand colored voxels under the demo frusta.">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.3">
+        <rect x="8"   y="30" width="140" height="58" rx="8"/>
+        <rect x="196" y="30" width="150" height="58" rx="8"/>
+        <rect x="394" y="30" width="130" height="58" rx="8"/>
+        <rect x="176" y="116" width="190" height="34" rx="8"/>
+      </g>
+      <rect x="572" y="30" width="180" height="58" rx="8" fill="none" stroke="#2a78d6" stroke-width="2"/>
+      <g fill="currentColor" font-size="12" text-anchor="middle">
+        <text x="78"  y="53">460 frames</text><text x="78" y="70" font-size="11" opacity=".75">incl. walk-in</text>
+        <text x="271" y="53">MoGe-2 lift</text><text x="271" y="70" font-size="11" opacity=".75">xyz + color, z &lt; 6 m</text>
+        <text x="459" y="53">voxel fusion</text><text x="459" y="70" font-size="11" opacity=".75">1.5 cm · ≥9 views</text>
+        <text x="662" y="53">211k colored voxels</text><text x="662" y="70" font-size="11" opacity=".75">+ 64 demos + test cam</text>
+        <text x="271" y="138" font-size="11">scale anchor: MPS semidense</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.3" fill="none">
+        <line x1="148" y1="59" x2="194" y2="59" marker-end="url(#ar)"/>
+        <line x1="346" y1="59" x2="392" y2="59" marker-end="url(#ar)"/>
+        <line x1="524" y1="59" x2="570" y2="59" marker-end="url(#ar)"/>
+        <line x1="271" y1="116" x2="271" y2="90" marker-end="url(#ar)"/>
+      </g>
+    </svg>
+    <figcaption>Depth phantoms are removed by requiring each voxel to be supported by at least nine
+    distinct frames; the survivors average ~11.4 M raw lifted points down to 211,306 stable voxels.</figcaption>
+  </figure>
+
+  <h2>How it works</h2>
+  <ol>
+    <li><strong>Frames:</strong> every 2nd frame of demo 000 — 460 frames total, deliberately <em>including the
+      walk-in approach</em>, which is what gives the reconstruction its room-wide coverage (the manipulation
+      window alone only sees the table).</li>
+    <li><strong>Lift:</strong> MoGe-2 depth per frame, lifted to 3D uncropped up to 6&nbsp;m, with the arm masked
+      out where a mask exists and each point carrying its pixel's RGB. Per-frame metric scale is set by the
+      median ratio against the MPS semidense SLAM points (median scale 0.832).</li>
+    <li><strong>Fusion:</strong> all ~11.4&nbsp;M points pool into a 1.5&nbsp;cm voxel grid — per-voxel mean position
+      and mean color — and only voxels seen from ≥&nbsp;9 distinct frames survive, which removes single-frame
+      depth phantoms. Result: 211,306 colored voxels.</li>
+    <li><strong>Display:</strong> a mild luma percentile stretch and small chroma gain are applied at bake time so
+      the room reads well on screen (viewing, not radiometry).</li>
+    <li><strong>Assembly:</strong> the fused cloud replaces the semidense cloud in the standard pose viewer —
+      the 64 registered demo trajectories and the red RealSense test camera are identical to the
+      <a href="cup_plate_02_viewer.html">original page</a>.</li>
+  </ol>
+
+  <h2>Honest caveats</h2>
+  <ul>
+    <li>MoGe depth on the textureless black tabletop has low-amplitude (cm-scale) warp.</li>
+    <li>Coverage follows attention: areas the glasses only glimpsed for a few frames are culled by the
+      view filter, so the room extent is slightly tighter than the sparse cloud's.</li>
+  </ul>
+
+  <p class="foot">Built with a standalone reconstruction script (MoGe-2 lift + vectorized voxel-mean fusion
+  with distinct-view counting) and <code>make_web_viewer.py --cloud</code>, which renders per-point colors in
+  both the WebGL and Canvas-2D paths. Same npz schema as the
+  <a style="color:var(--accent)" href="method_color_cloud.html">true-color semidense cloud</a>.</p>
+</div>
+</body></html>

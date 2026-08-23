@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Method — V3 fused scene reconstruction</title>
+<style>
+  :root{--bg:#edece8;--card:#fff;--ink:#22201c;--muted:#6b6862;--line:#d9d7d1;--accent:#2a78d6;--code:#e7e5df}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#1a1a18;--card:#242320;--ink:#e9e7e2;--muted:#a09d95;--line:#35342f;--accent:#6da7ec;--code:#2e2d29}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:44px 22px 72px}
+  .crumb{font-size:13.5px;margin:0 0 26px}
+  .crumb a{color:var(--accent);text-decoration:none}
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:17px;margin:34px 0 10px}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+  a.btn{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:9px 15px;color:var(--accent);font-weight:600;text-decoration:none;font-size:14.5px;margin:0 8px 8px 0}
+  figure{margin:18px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 16px 10px;overflow-x:auto}
+  figcaption{color:var(--muted);font-size:12.5px;margin-top:8px}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  ol,ul{padding-left:22px;margin:10px 0}
+  li{margin:5px 0}
+  p{margin:10px 0}
+  code{background:var(--code);border-radius:5px;padding:1px 5px;font-size:.92em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .tablewrap{border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--card);margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:8px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+  thead th{border-top:0;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+</style></head><body>
+<div class="wrap">
+  <p class="crumb"><a href="index.html">← all viewers</a></p>
+  <h1>V3 fused scene reconstruction</h1>
+  <p class="sub">Instead of lifting a fresh (noisy) scene cloud every frame, all of a recording's V2 clouds
+  are fused into one static reconstruction of the workspace — the same scene points are shown to the policy
+  at every timestep.</p>
+  <p>
+    <a class="btn" href="scene_recon_viewer_demo000.html">open (height-shaded) →</a>
+    <a class="btn" href="scene_recon_color_viewer_demo000.html">open (true color) →</a>
+  </p>
+
+  <h2>Cross-view voxel fusion</h2>
+  <figure>
+    <svg viewBox="0 0 760 168" role="img" aria-label="All per-frame dense clouds are pooled into a voxel grid; each voxel takes the median of its points and survives only if seen from enough distinct frames, yielding one static scene used at every timestep.">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.3">
+        <rect x="8"   y="22" width="150" height="34" rx="8"/>
+        <rect x="8"   y="64" width="150" height="34" rx="8"/>
+        <rect x="8"   y="106" width="150" height="34" rx="8"/>
+        <rect x="238" y="48" width="160" height="66" rx="8"/>
+        <rect x="470" y="48" width="130" height="66" rx="8"/>
+      </g>
+      <rect x="654" y="48" width="98" height="66" rx="8" fill="none" stroke="#2a78d6" stroke-width="2"/>
+      <g fill="currentColor" font-size="12" text-anchor="middle">
+        <text x="83"  y="43">frame 1 cloud</text>
+        <text x="83"  y="85">frame 2 cloud</text>
+        <text x="83"  y="127">… frame T</text>
+        <text x="318" y="73">1 cm voxel grid</text><text x="318" y="90" font-size="11" opacity=".75">median per voxel</text>
+        <text x="535" y="73">view filter</text><text x="535" y="90" font-size="11" opacity=".75">≥ max(10, 3%·T)</text>
+        <text x="703" y="73">static scene</text><text x="703" y="90" font-size="11" opacity=".75">every frame</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.3" fill="none">
+        <path d="M158,39 C196,39 206,58 236,66" marker-end="url(#ar)"/>
+        <line x1="158" y1="81" x2="236" y2="81" marker-end="url(#ar)"/>
+        <path d="M158,123 C196,123 206,104 236,96" marker-end="url(#ar)"/>
+        <line x1="398" y1="81" x2="468" y2="81" marker-end="url(#ar)"/>
+        <line x1="600" y1="81" x2="652" y2="81" marker-end="url(#ar)"/>
+      </g>
+      <g fill="currentColor" font-size="10.5" text-anchor="middle" opacity=".8">
+        <text x="433" y="72">support</text>
+        <text x="380" y="156">a depth phantom seen in only a few frames occupies its own voxels — the view filter removes it</text>
+      </g>
+    </svg>
+    <figcaption>Median alone cannot vote across surfaces (a phantom lives in its <em>own</em> voxels), so the
+    minimum-view threshold scales with episode length — that is what actually kills single-frame depth errors.</figcaption>
+  </figure>
+
+  <h2>How it works</h2>
+  <ol>
+    <li>Take every frame's V2 dense scene points (already metric-scaled, arm-masked, in the shared world frame).</li>
+    <li>Pool them into 1&nbsp;cm voxels; each voxel's position is the median of its points.</li>
+    <li>Keep only voxels supported by at least <code>max(10, 3% of frames)</code> distinct frames — transient
+      depth phantoms don't accumulate support and vanish.</li>
+    <li>The result is one <code>scene_recon.npz</code> per recording. Training samples it once (FPS to 1024
+      points) and shows the <em>same</em> scene at every timestep alongside the per-frame V1 entity points.</li>
+    <li>At robot inference the symmetric move: the scene is reconstructed <strong>once</strong> from the RealSense
+      after homing, then reused for the whole episode — zero per-step segmentation or depth lifting.</li>
+  </ol>
+
+  <h2>Quality (demo 000)</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Triangulated object keypoints → reconstructed surface</td><td>7 mm median</td></tr>
+      <tr><td>Phantom points &gt; 2 cm off the table plane (open table region)</td><td>0.0%</td></tr>
+      <tr><td>Cup relief above the table in the fused cloud</td><td>≈ 44 mm bump where the cup stood</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>The two variants</h2>
+  <ul>
+    <li><strong>Height-shaded:</strong> scene colored by height above the fitted table plane — good for judging
+      geometry (flatness, phantoms, object relief).</li>
+    <li><strong>True color:</strong> a finer fusion (5&nbsp;mm voxels, ≥5 views) with per-point median RGB sampled
+      from the frames — ~44k colored points; good for judging what the reconstruction actually is.</li>
+  </ul>
+
+  <p class="foot">Built with <code>preprocess/PointCloudGen.py --recon</code> (fusion via
+  <code>utils/pcd.py::fuse_voxel_median</code>, unit-tested on synthetic phantom data), colorization by
+  projecting fused points into the recording's RGB frames, and the viewer pair
+  <code>extract_pcd_seq.py</code> + <code>make_pcd_viewer.py</code> with a static-scene layer.</p>
+</div>
+</body></html>

@@ -5,11 +5,26 @@ each demo's registered camera frustums and head trajectory.
 
 **Live:** https://nussairhroub.github.io/humanego-viewers/
 
-| Task | Demos | Viewer |
+| Task | Demos | Viewer | Method |
+|---|---|---|---|
+| cup_plate_02 | 64 | [cup_plate_02_viewer.html](cup_plate_02_viewer.html) | [method_pose_viewer.html](method_pose_viewer.html) |
+| serve_bread | 61 | [serve_bread_viewer.html](serve_bread_viewer.html) | [method_pose_viewer.html](method_pose_viewer.html) |
+| water_flowers | 61 | [water_flowers_viewer.html](water_flowers_viewer.html) | [method_pose_viewer.html](method_pose_viewer.html) |
+
+### cup_plate_02 — room reconstructions
+
+| Construction | Viewer | Method |
 |---|---|---|
-| cup_plate_02 | 64 | [cup_plate_02_viewer.html](cup_plate_02_viewer.html) |
-| serve_bread | 61 | [serve_bread_viewer.html](serve_bread_viewer.html) |
-| water_flowers | 61 | [water_flowers_viewer.html](water_flowers_viewer.html) |
+| Room reconstruction (dense true-color MoGe, 64 demos + test cam) | [cup_plate_02_recon_viewer.html](cup_plate_02_recon_viewer.html) | [method_room_recon.html](method_room_recon.html) |
+| True-color semidense cloud | [cup_plate_02_color_viewer.html](cup_plate_02_color_viewer.html) | [method_color_cloud.html](method_color_cloud.html) |
+
+### cup_plate_02 — policy observation clouds (demo 000)
+
+| Construction | Viewer | Method |
+|---|---|---|
+| V1 sparse entity points | [pcd_obs_viewer_demo000.html](pcd_obs_viewer_demo000.html) | [method_pcd_obs.html](method_pcd_obs.html) |
+| V2 dense scene clouds | [grey](pcd_dense_viewer_demo000.html) · [height-shaded](pcd_dense_shaded_viewer_demo000.html) | [method_pcd_dense.html](method_pcd_dense.html) |
+| V3 fused scene reconstruction | [height-shaded](scene_recon_viewer_demo000.html) · [true color](scene_recon_color_viewer_demo000.html) | [method_scene_recon.html](method_scene_recon.html) |
 
 Drag to rotate, scroll to zoom, shift-drag (or right-drag) to pan; use the slider to step through
 demos, or "show all demos" to overlay every pose. Each page is a single self-contained HTML file

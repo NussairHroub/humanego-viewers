@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Method — true-color semidense cloud</title>
+<style>
+  :root{--bg:#edece8;--card:#fff;--ink:#22201c;--muted:#6b6862;--line:#d9d7d1;--accent:#2a78d6;--code:#e7e5df}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#1a1a18;--card:#242320;--ink:#e9e7e2;--muted:#a09d95;--line:#35342f;--accent:#6da7ec;--code:#2e2d29}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:44px 22px 72px}
+  .crumb{font-size:13.5px;margin:0 0 26px}
+  .crumb a{color:var(--accent);text-decoration:none}
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:17px;margin:34px 0 10px}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+  a.btn{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:9px 15px;color:var(--accent);font-weight:600;text-decoration:none;font-size:14.5px;margin:0 8px 8px 0}
+  figure{margin:18px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 16px 10px;overflow-x:auto}
+  figcaption{color:var(--muted);font-size:12.5px;margin-top:8px}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  ol,ul{padding-left:22px;margin:10px 0}
+  li{margin:5px 0}
+  p{margin:10px 0}
+  code{background:var(--code);border-radius:5px;padding:1px 5px;font-size:.92em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+</style></head><body>
+<div class="wrap">
+  <p class="crumb"><a href="index.html">← all viewers</a></p>
+  <h1>True-color semidense cloud</h1>
+  <p class="sub">The same room cloud and camera poses as the plain cup_plate_02 viewer, but each SLAM
+  point carries the color it actually has in the video.</p>
+  <p><a class="btn" href="cup_plate_02_color_viewer.html">open the viewer →</a></p>
+
+  <h2>How the points get their color</h2>
+  <figure>
+    <svg viewBox="0 0 760 128" role="img" aria-label="Each semidense 3D point is projected into the reference demo's RGB frames; the per-point median of the sampled pixels becomes its color.">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.3">
+        <rect x="8"   y="34" width="152" height="58" rx="8"/>
+        <rect x="232" y="34" width="176" height="58" rx="8"/>
+        <rect x="480" y="34" width="130" height="58" rx="8"/>
+      </g>
+      <rect x="662" y="34" width="90" height="58" rx="8" fill="none" stroke="#2a78d6" stroke-width="2"/>
+      <g fill="currentColor" font-size="12" text-anchor="middle">
+        <text x="84"  y="57">semidense point</text><text x="84" y="74" font-size="11" opacity=".75">3D, world frame</text>
+        <text x="320" y="57">project into frames</text><text x="320" y="74" font-size="11" opacity=".75">per-frame K + c2w</text>
+        <text x="545" y="57">pixel samples</text><text x="545" y="74" font-size="11" opacity=".75">frames where visible</text>
+        <text x="707" y="57">median</text><text x="707" y="74" font-size="11" opacity=".75">RGB</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.3" fill="none">
+        <line x1="160" y1="63" x2="230" y2="63" marker-end="url(#ar)"/>
+        <line x1="408" y1="63" x2="478" y2="63" marker-end="url(#ar)"/>
+        <line x1="610" y1="63" x2="660" y2="63" marker-end="url(#ar)"/>
+      </g>
+      <g fill="currentColor" font-size="10.5" text-anchor="middle" opacity=".8">
+        <text x="195" y="54">reproject</text>
+        <text x="443" y="54">sample</text>
+      </g>
+    </svg>
+    <figcaption>Median over many observations rejects transient occluders (the moving arm) and
+    exposure outliers.</figcaption>
+  </figure>
+  <ol>
+    <li>Take the fused semidense cloud in the viewer frame (the reference demo's MPS world).</li>
+    <li>For every rectified RGB frame of the reference demo, project all points using that frame's
+      intrinsics <code>K</code> and camera-to-world pose; keep samples that land inside the image with
+      positive depth.</li>
+    <li>Assign each point the <strong>median</strong> RGB over all frames where it was sampled. About 72%
+      of the points are seen at least once; the rest stay neutral grey.</li>
+    <li>A mild display contrast stretch is applied at bake time so the cloud reads well against the page —
+      colors are for viewing, not radiometry.</li>
+  </ol>
+
+  <h2>What you can see</h2>
+  <p>The black table, the white plate on it, and the cabinets become directly recognizable, which makes it
+  much easier to relate the camera frustums to the physical room than with the plain grey cloud. Colored
+  points render slightly larger than grey ones so the colored structure dominates visually.</p>
+
+  <p class="foot">Built with <code>color_cloud.py</code> (two stages: <code>sample</code> projects points into
+  the reference demo's <code>rgb.png</code> / <code>aria_cam_rgb.json</code> frames and takes per-point median
+  color; <code>fuse</code> rebuilds the cloud npz) and <code>make_web_viewer.py --cloud</code>, which renders
+  per-point colors in both the WebGL and Canvas-2D paths.</p>
+</div>
+</body></html>

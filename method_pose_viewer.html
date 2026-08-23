@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Method — camera-pose viewers</title>
+<style>
+  :root{--bg:#edece8;--card:#fff;--ink:#22201c;--muted:#6b6862;--line:#d9d7d1;--accent:#2a78d6;--code:#e7e5df}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#1a1a18;--card:#242320;--ink:#e9e7e2;--muted:#a09d95;--line:#35342f;--accent:#6da7ec;--code:#2e2d29}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:44px 22px 72px}
+  .crumb{font-size:13.5px;margin:0 0 26px}
+  .crumb a{color:var(--accent);text-decoration:none}
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:17px;margin:34px 0 10px}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+  a.btn{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:9px 15px;color:var(--accent);font-weight:600;text-decoration:none;font-size:14.5px;margin:0 8px 8px 0}
+  figure{margin:18px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 16px 10px;overflow-x:auto}
+  figcaption{color:var(--muted);font-size:12.5px;margin-top:8px}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  ol,ul{padding-left:22px;margin:10px 0}
+  li{margin:5px 0}
+  p{margin:10px 0}
+  code{background:var(--code);border-radius:5px;padding:1px 5px;font-size:.92em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .tablewrap{border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--card);margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:8px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+  thead th{border-top:0;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+</style></head><body>
+<div class="wrap">
+  <p class="crumb"><a href="index.html">← all viewers</a></p>
+  <h1>Camera-pose viewers</h1>
+  <p class="sub">How the task viewers are built: per-demo camera trajectories from Aria MPS, all demos
+  registered into one shared room frame, plus (for cup_plate_02) the pose of the robot test rig's
+  RealSense camera placed into the same frame.</p>
+  <p>
+    <a class="btn" href="cup_plate_02_viewer.html">cup_plate_02 →</a>
+    <a class="btn" href="serve_bread_viewer.html">serve_bread →</a>
+    <a class="btn" href="water_flowers_viewer.html">water_flowers →</a>
+  </p>
+
+  <h2>Where the poses come from</h2>
+  <figure>
+    <svg viewBox="0 0 760 150" role="img" aria-label="Per-demo MPS trajectories are composed with calibration to RGB-camera poses, registered by ICP into the reference demo's world, and baked into one HTML viewer.">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.3">
+        <rect x="8"   y="30" width="150" height="58" rx="8"/>
+        <rect x="228" y="30" width="150" height="58" rx="8"/>
+        <rect x="448" y="30" width="130" height="58" rx="8"/>
+        <rect x="8"   y="108" width="150" height="34" rx="8"/>
+      </g>
+      <rect x="638" y="30" width="114" height="58" rx="8" fill="none" stroke="#2a78d6" stroke-width="2"/>
+      <g fill="currentColor" font-size="12" text-anchor="middle">
+        <text x="83"  y="53">MPS per demo</text><text x="83" y="70" font-size="11" opacity=".75">closed-loop traj + calib</text>
+        <text x="303" y="53">T_world_rgb</text><text x="303" y="70" font-size="11" opacity=".75">one world per demo</text>
+        <text x="513" y="53">shared frame</text><text x="513" y="70" font-size="11" opacity=".75">= demo 000 world</text>
+        <text x="695" y="53">viewer</text><text x="695" y="70" font-size="11" opacity=".75">single HTML</text>
+        <text x="83"  y="130" font-size="11">semidense clouds</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.3" fill="none">
+        <line x1="158" y1="59" x2="226" y2="59" marker-end="url(#ar)"/>
+        <line x1="378" y1="59" x2="446" y2="59" marker-end="url(#ar)"/>
+        <line x1="578" y1="59" x2="636" y2="59" marker-end="url(#ar)"/>
+        <path d="M158,125 C300,125 340,95 410,72" marker-end="url(#ar)"/>
+      </g>
+      <g fill="currentColor" font-size="10.5" text-anchor="middle" opacity=".8">
+        <text x="192" y="50">device→RGB</text>
+        <text x="412" y="50">4-DoF ICP</text>
+        <text x="607" y="50">bake</text>
+        <text x="330" y="142">ICP on the room clouds</text>
+      </g>
+    </svg>
+    <figcaption>Each demo records in its own gravity-aligned MPS world; a trimmed yaw+translation ICP on
+    the semidense room clouds brings every demo into the reference demo's world.</figcaption>
+  </figure>
+  <ol>
+    <li>For every demo, MPS gives the closed-loop device trajectory <code>T_world_device(t)</code>; composing
+      with the online calibration (device → RGB camera) yields the RGB camera pose per frame.</li>
+    <li>Each demo lives in its <em>own</em> gravity-aligned world. The demo with the lowest index (000) is the
+      reference; every other demo is registered to it with a trimmed 4-DoF ICP (yaw + translation — gravity
+      already fixes roll/pitch) run on the semidense room clouds.</li>
+    <li>Trajectories, frustums, and the room cloud are baked into one self-contained HTML file
+      (WebGL renderer with a Canvas-2D fallback, no dependencies).</li>
+  </ol>
+
+  <h2>Placing the RealSense test camera (red frustum)</h2>
+  <p>The robot test rig is a different site with no visual overlap, so the bridge is a <em>task frame</em>
+  built identically on both sides from the task objects:</p>
+  <ul>
+    <li><strong>Origin</strong> = plate center — the plate stayed fixed during collection (the cup was varied).</li>
+    <li><strong>+Z</strong> = gravity up (MPS world on the demo side; fitted table plane on the rig side).</li>
+    <li><strong>+X</strong> = horizontal plate→cup direction. On the demo side it is averaged over all 64 demos,
+      so the per-demo cup variation cancels; on the rig side it comes from depth-deprojected cup/plate centers.</li>
+  </ul>
+  <p>Composing rig→task-frame with task-frame→viewer-world places the RealSense pose in the viewer.
+  A synthetic check with a known camera recovers it to ~2&nbsp;mm / 0.01°; the real placement lands
+  in-distribution with the demo head poses (44° elevation vs 48°±4° across demos, ~3° azimuth offset).</p>
+
+  <h2>Viewer features</h2>
+  <ul>
+    <li>Slider steps through demos; a per-demo frustum-count control subsamples the trajectory (1…all).</li>
+    <li>Blue = camera frustums, orange = head path, red = RealSense test camera with an XYZ triad (cup_plate_02 only).</li>
+    <li>Drag = rotate, scroll = zoom, shift-drag or right-drag = pan.</li>
+  </ul>
+
+  <p class="foot">Built with <code>extract_multi.py</code> (packs poses + clouds per task into one npz) and
+  <code>make_web_viewer.py</code> (bakes the HTML; <code>--extra-cams</code> draws the test camera);
+  <code>place_test_cam.py</code> computes the test-camera pose from per-demo <code>training_data.json</code>
+  files plus the rig's depth measurements. Data: Aria MPS SLAM (closed-loop trajectories, online calibration,
+  semidense point clouds).</p>
+</div>
+</body></html>
