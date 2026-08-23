@@ -4,8 +4,8 @@
 <title>SAM 3D canonical points — cup_plate_02 demo 000</title>
 <style>
   html,body{margin:0;height:100%;background:#14140f;color:#e9e7e2;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
-  canvas{display:block;width:100vw;height:100vh;cursor:grab}
-  #panel{position:fixed;top:14px;left:14px;background:rgba(30,30,26,.92);border:1px solid #454540;border-radius:12px;padding:14px 16px;font-size:13px;max-width:270px}
+  canvas{display:block;width:100vw;height:100vh;cursor:grab;touch-action:none}
+  #panel{position:fixed;top:14px;left:14px;z-index:2147483647;background:rgba(30,30,26,.92);border:1px solid #454540;border-radius:12px;padding:14px 16px;font-size:13px;max-width:270px}
   #panel h1{font-size:15px;margin:0 0 6px}
   #panel .m{color:#a09d95;font-size:12px;margin:2px 0}
   label{display:block;margin:4px 0;cursor:pointer;user-select:none}
@@ -64,14 +64,36 @@ function draw(){
   if(layers[1].checked){ctx.strokeStyle="#fff";ctx.lineWidth=1;
     for(let i=0;i<D.nCanon;i++){const p=view(canon[3*i],canon[3*i+1],canon[3*i+2]);ctx.beginPath();ctx.arc(p[0],p[1],5.5,0,6.2832);ctx.stroke();}}
 }
-let drag=null;
-cv.addEventListener("mousedown",e=>{drag={x:e.clientX,y:e.clientY,pan:e.shiftKey||e.button===2};cv.style.cursor="grabbing";});
-addEventListener("mouseup",()=>{drag=null;cv.style.cursor="grab";});
-addEventListener("mousemove",e=>{if(!drag)return;
-  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+let drag=null,lastTouchDist=null;
+const inPanel=t=>t&&t.closest&&t.closest("#panel");
+const start=(x,y,pan,t)=>{if(inPanel(t))return;drag={x,y,pan};cv.style.cursor="grabbing";};
+const move=(x,y)=>{if(!drag)return;
+  const dx=x-drag.x,dy=y-drag.y;drag.x=x;drag.y=y;
   if(drag.pan){panX+=dx;panY+=dy;}else{yaw+=dx*0.008;pitch=Math.max(-1.5,Math.min(1.5,pitch+dy*0.008));}
-  draw();});
-cv.addEventListener("wheel",e=>{e.preventDefault();dist*=Math.exp(e.deltaY*0.0012);dist=Math.max(0.15,Math.min(6,dist));draw();},{passive:false});
-cv.addEventListener("contextmenu",e=>e.preventDefault());
+  req();};
+const end=()=>{drag=null;lastTouchDist=null;cv.style.cursor="grab";};
+let raf=false;function req(){if(raf)return;raf=true;requestAnimationFrame(()=>{raf=false;draw();});}
+if(window.PointerEvent){
+  addEventListener("pointerdown",e=>{if(e.isPrimary)start(e.clientX,e.clientY,e.shiftKey||e.button===2,e.target);},true);
+  addEventListener("pointermove",e=>{if(e.isPrimary)move(e.clientX,e.clientY);},true);
+  addEventListener("pointerup",end,true);addEventListener("pointercancel",end,true);
+}else{
+  addEventListener("mousedown",e=>start(e.clientX,e.clientY,e.shiftKey||e.button===2,e.target),true);
+  addEventListener("mousemove",e=>move(e.clientX,e.clientY),true);
+  addEventListener("mouseup",end,true);
+}
+addEventListener("touchstart",e=>{if(inPanel(e.target))return;
+  if(e.touches.length===2){const a=e.touches[0],b=e.touches[1];lastTouchDist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);drag=null;}
+  else start(e.touches[0].clientX,e.touches[0].clientY,false,e.target);
+  e.preventDefault();},{passive:false,capture:true});
+addEventListener("touchmove",e=>{if(inPanel(e.target))return;
+  if(e.touches.length===2&&lastTouchDist){const a=e.touches[0],b=e.touches[1];
+    const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    dist=Math.max(0.15,Math.min(6,dist*lastTouchDist/d));lastTouchDist=d;req();}
+  else if(e.touches.length===1)move(e.touches[0].clientX,e.touches[0].clientY);
+  e.preventDefault();},{passive:false,capture:true});
+addEventListener("touchend",end,{capture:true});
+addEventListener("wheel",e=>{if(inPanel(e.target))return;e.preventDefault();dist*=Math.exp(e.deltaY*0.0012);dist=Math.max(0.15,Math.min(6,dist));req();},{passive:false,capture:true});
+addEventListener("contextmenu",e=>{if(!inPanel(e.target))e.preventDefault();},true);
 rs();
 </script></body></html>
