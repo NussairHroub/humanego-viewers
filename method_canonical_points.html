@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Method — canonical points from SAM 3D</title>
+<style>
+  :root{--bg:#edece8;--card:#fff;--ink:#22201c;--muted:#6b6862;--line:#d9d7d1;--accent:#2a78d6;--code:#e7e5df}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#1a1a18;--card:#242320;--ink:#e9e7e2;--muted:#a09d95;--line:#35342f;--accent:#6da7ec;--code:#2e2d29}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:44px 22px 72px}
+  .crumb{font-size:13.5px;margin:0 0 26px}
+  .crumb a{color:var(--accent);text-decoration:none}
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:17px;margin:34px 0 10px}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+  a.btn{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:9px 15px;color:var(--accent);font-weight:600;text-decoration:none;font-size:14.5px;margin:0 8px 8px 0}
+  figure{margin:18px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 16px 10px;overflow-x:auto}
+  figcaption{color:var(--muted);font-size:12.5px;margin-top:8px}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  ol,ul{padding-left:22px;margin:10px 0}
+  li{margin:5px 0}
+  p{margin:10px 0}
+  code{background:var(--code);border-radius:5px;padding:1px 5px;font-size:.92em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .tablewrap{border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--card);margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;padding:8px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+  thead th{border-top:0;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+</style></head><body>
+<div class="wrap">
+  <p class="crumb"><a href="index.html">← all viewers</a></p>
+  <h1>Canonical points from SAM 3D</h1>
+  <p class="sub">A prototype experiment: reconstruct each task object from ONE image with SAM 3D Objects,
+  register the reconstruction into the demo world, and sample a fixed set of canonical points in the
+  object's own frame — the same physical points in every demo, instead of per-recording keypoint picks.</p>
+  <p><a class="btn" href="canonical_points_viewer.html">open the viewer →</a></p>
+
+  <h2>Why</h2>
+  <p>The V1 pipeline selects object keypoints per recording from a segmentation mask, so "the cup's 20
+  points" are <em>different physical points</em> in every demo. Point-policy methods get their power from
+  correspondence — the same semantic points everywhere. A complete 3D reconstruction of the object gives
+  that automatically: sample K points once in the object's local frame, and every demo (and robot
+  deployment) re-poses the identical points via its own object pose.</p>
+
+  <h2>Pipeline</h2>
+  <figure>
+    <svg viewBox="0 0 760 168" role="img" aria-label="One RGB frame and its object mask go through SAM 3D Objects to a textured mesh; multi-start similarity ICP registers it to the world, anchored by the triangulated keypoints and the fused scene; farthest-point sampling in the object frame yields K canonical points.">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.3">
+        <rect x="8"   y="30" width="132" height="58" rx="8"/>
+        <rect x="188" y="30" width="150" height="58" rx="8"/>
+        <rect x="386" y="30" width="150" height="58" rx="8"/>
+        <rect x="366" y="122" width="190" height="34" rx="8"/>
+      </g>
+      <rect x="584" y="30" width="168" height="58" rx="8" fill="none" stroke="#2a78d6" stroke-width="2"/>
+      <g fill="currentColor" font-size="12" text-anchor="middle">
+        <text x="74"  y="53">1 frame</text><text x="74" y="70" font-size="11" opacity=".75">rgb + object mask</text>
+        <text x="263" y="53">SAM 3D Objects</text><text x="263" y="70" font-size="11" opacity=".75">textured mesh</text>
+        <text x="461" y="53">similarity ICP</text><text x="461" y="70" font-size="11" opacity=".75">multi-start, trimmed</text>
+        <text x="668" y="53">K=20 canonical pts</text><text x="668" y="70" font-size="11" opacity=".75">object local frame</text>
+        <text x="461" y="144" font-size="11">anchors: V1 kpts + fused scene</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.3" fill="none">
+        <line x1="140" y1="59" x2="186" y2="59" marker-end="url(#ar)"/>
+        <line x1="338" y1="59" x2="384" y2="59" marker-end="url(#ar)"/>
+        <line x1="536" y1="59" x2="582" y2="59" marker-end="url(#ar)"/>
+        <line x1="461" y1="122" x2="461" y2="90" marker-end="url(#ar)"/>
+      </g>
+      <g fill="currentColor" font-size="10.5" text-anchor="middle" opacity=".8">
+        <text x="560" y="50">FPS</text>
+      </g>
+    </svg>
+    <figcaption>SAM 3D outputs geometry in a normalized object-centric frame; the similarity ICP recovers
+    scale and pose in one step, restarted over 8 yaws (and an upside-down flip) to escape local minima.</figcaption>
+  </figure>
+  <ol>
+    <li><strong>Reconstruct:</strong> the first pre-grasp frame's <code>rgb.png</code> + <code>mask_objN.png</code>
+      go through SAM 3D Objects (single-image → complete textured mesh, including unseen surfaces; ~35 s
+      per object on an A6000). Vertex colors are sampled from the mesh texture at the UVs.</li>
+    <li><strong>Register:</strong> trimmed similarity ICP (scale + SE(3), Umeyama updates) fits the mesh points
+      to the recording's world — targets are the V1 triangulated keypoints (upweighted 8×) plus the fused
+      scene reconstruction cropped around the object. Multi-start over yaw and flip handles the unknown
+      output orientation.</li>
+    <li><strong>Sample:</strong> the registered points are mapped into the object's local frame via its latched
+      pose <code>T_obj_to_world</code>, and farthest-point sampling keeps K=20 canonical points.</li>
+  </ol>
+
+  <h2>QA (demo 000, frame 00310)</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Check</th><th>cup (obj1)</th><th>plate (obj2)</th></tr></thead>
+    <tbody>
+      <tr><td>V1 keypoint → reconstructed surface, median</td><td>6.8 mm</td><td>13.5 mm</td></tr>
+      <tr><td>same, p90 / max</td><td>21.3 / 35.8 mm</td><td>38.5 / 61.8 mm</td></tr>
+      <tr><td>ICP residual (trimmed RMS)</td><td>4.6 mm</td><td>4.2 mm</td></tr>
+      <tr><td>recovered extent</td><td>7.1 × 7.0 × 6.6 cm</td><td>21.2 × 21.7 × 5.5 cm</td></tr>
+    </tbody>
+  </table></div>
+  <p>The recovered sizes are physically plausible and both objects sit correctly on the fused table in the
+  viewer. The cup's keypoints hug the reconstruction tightly; several plate keypoints ring just outside the
+  reconstructed disc — a flat disc leaves the in-plane registration weakly constrained, so the plate is the
+  part to tighten (pin its vertical to the table plane, its scale to the rim keypoints) before training on
+  canonical points.</p>
+
+  <h2>Honest caveats</h2>
+  <ul>
+    <li>One frame of one recording so far; the value claim — the <em>same</em> canonical points across all 64
+      demos — still needs a cross-demo consistency check.</li>
+    <li>SAM 3D also predicts its own object pose per image (recorded, not yet verified against the
+      SLAM-triangulated poses).</li>
+    <li>SAM 3D outputs are normalized-scale; metric scale here comes entirely from the ICP anchors.</li>
+  </ul>
+
+  <h2>Viewer features</h2>
+  <ul>
+    <li>Five toggleable layers: true-color reconstructions, canonical points, V1 triangulated keypoints,
+      MPS hand landmarks, fused scene.</li>
+    <li>Drag = rotate, scroll = zoom, shift-drag or right-drag = pan.</li>
+  </ul>
+
+  <p class="foot">Built with <code>scripts/proto_canonical_points.py</code> (branch
+  <code>canonical-points</code>; outputs per-object <code>canonical_kpts_*.npz</code>, registered clouds,
+  <code>recon_*.glb</code>, <code>qa.json</code>) and <code>make_canonical_viewer.py</code>. Model:
+  <a style="color:var(--accent)" href="https://github.com/facebookresearch/sam-3d-objects">SAM 3D Objects</a>
+  (gated weights, SAM License).</p>
+</div>
+</body></html>
