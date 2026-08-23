@@ -39,7 +39,8 @@
   register the reconstruction into the demo world, and sample a fixed set of canonical points in the
   object's own frame — the same physical points in every demo, instead of per-recording keypoint picks.</p>
   <p><a class="btn" href="canonical_points_viewer.html">open the viewer →</a>
-     <a class="btn" href="canonical_points_seq_viewer.html">open the frame-slider viewer →</a></p>
+     <a class="btn" href="canonical_points_seq_viewer.html">open the frame-slider viewer →</a>
+     <a class="btn" href="canonical_points_tracked_viewer.html">open the tracked-cup viewer →</a></p>
 
   <h2>Why</h2>
   <p>The V1 pipeline selects object keypoints per recording from a segmentation mask, so "the cup's 20
@@ -125,6 +126,12 @@
       landmarks, V1 keypoints, grasp state, and the moving egocentric camera frustum (slider, play,
       ←/→ keys). The objects and canonical points stay put by the latched-anchor convention; the hand
       and camera are what move.</li>
+    <li>The tracked-cup variant adds a "cup follows hand" layer: no per-frame object poses exist in the
+      preprocessed data (poses are latched), so the tracked motion is reconstructed as a rigid ride on
+      the hand — <code>T_cup(f) = T_hand(f) · T_hand(g₀)⁻¹ · T_cup</code> over the single grasp segment
+      (frames 178–549), frozen at release. The colored cup and its canonical points carry along an
+      orange trail and land on the plate; a faint ghost marks the latched pose the policy observes.
+      Exact while the grasp is rigid; mid-carry finger re-adjustments would show as small errors.</li>
     <li>Drag = rotate, scroll = zoom, shift-drag or right-drag = pan; touch and pinch-zoom supported.</li>
   </ul>
 
