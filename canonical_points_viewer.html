@@ -73,15 +73,29 @@ const move=(x,y)=>{if(!drag)return;
   req();};
 const end=()=>{drag=null;lastTouchDist=null;cv.style.cursor="grab";};
 let raf=false;function req(){if(raf)return;raf=true;requestAnimationFrame(()=>{raf=false;draw();});}
+const onDown=e=>start(e.clientX,e.clientY,e.shiftKey||e.button===2||(e.buttons&2),e.target);
+const onMove=e=>{
+  if(!drag&&(e.buttons&3)&&!inPanel(e.target))
+    start(e.clientX,e.clientY,e.shiftKey||!!(e.buttons&2),e.target);  // down event was lost: arm from button state
+  else if(drag&&e.buttons===0)end();
+  else move(e.clientX,e.clientY);};
 if(window.PointerEvent){
-  addEventListener("pointerdown",e=>{if(e.isPrimary)start(e.clientX,e.clientY,e.shiftKey||e.button===2,e.target);},true);
-  addEventListener("pointermove",e=>{if(e.isPrimary)move(e.clientX,e.clientY);},true);
+  addEventListener("pointerdown",e=>{if(e.isPrimary)onDown(e);},true);
+  addEventListener("pointermove",e=>{if(e.isPrimary)onMove(e);},true);
   addEventListener("pointerup",end,true);addEventListener("pointercancel",end,true);
 }else{
-  addEventListener("mousedown",e=>start(e.clientX,e.clientY,e.shiftKey||e.button===2,e.target),true);
-  addEventListener("mousemove",e=>move(e.clientX,e.clientY),true);
+  addEventListener("mousedown",onDown,true);
+  addEventListener("mousemove",onMove,true);
   addEventListener("mouseup",end,true);
 }
+// clicks retargeted by a foreign overlay: hit-test the panel labels manually
+addEventListener("click",e=>{
+  if(inPanel(e.target))return;
+  for(const l of document.querySelectorAll("#panel label")){
+    const r=l.getBoundingClientRect();
+    if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom){
+      const b=l.querySelector("input");b.checked=!b.checked;draw();break;}
+  }},true);
 addEventListener("touchstart",e=>{if(inPanel(e.target))return;
   if(e.touches.length===2){const a=e.touches[0],b=e.touches[1];lastTouchDist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);drag=null;}
   else start(e.touches[0].clientX,e.touches[0].clientY,false,e.target);
