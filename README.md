@@ -5,6 +5,10 @@ each demo's registered camera frustums and head trajectory.
 
 **Live:** https://nussairhroub.github.io/humanego-viewers/
 
+**Presentation galleries:** [Dynamic Scene Gallery](presentation.html) ·
+[Collected Demos](collected_demos.html) · [Hand Tracking](hand_tracking.html) ·
+[Preprocessing](preprocessing.html) (per-recording clips in `media_cup_plate_02/`)
+
 | Task | Demos | Viewer | Method |
 |---|---|---|---|
 | cup_plate_02 | 64 | [cup_plate_02_viewer.html](cup_plate_02_viewer.html) | [method_pose_viewer.html](method_pose_viewer.html) |

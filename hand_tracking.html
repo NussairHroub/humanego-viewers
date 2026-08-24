@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hand & Object Tracking — cup_plate_02</title>
+<style>
+  :root{--bg:#12110d;--card:#1c1b17;--ink:#e9e7e2;--muted:#a09d95;--line:#3a3934;--accent:#6da7ec}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1280px;margin:0 auto;padding:40px 22px 80px}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.01em}
+  .nav{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 18px}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:4px 11px;border:1px solid var(--line);
+    border-radius:16px}
+  .nav a.n-track{color:var(--ink);border-color:#5a594f;background:var(--card)}
+  .sub{color:var(--muted);font-size:15px;max-width:880px;margin:0 0 16px}
+  #gbar{position:sticky;top:0;z-index:50;background:rgba(18,17,13,.94);backdrop-filter:blur(4px);
+    border-bottom:1px solid var(--line);margin:0 -22px 18px;padding:9px 22px;display:flex;gap:14px;
+    flex-wrap:wrap;align-items:center;font-size:13px}
+  #gbar button,#gbar select{background:#2e2d29;border:1px solid #4a4944;color:#e9e7e2;border-radius:8px;
+    padding:3px 12px;cursor:pointer;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .cell video{display:block;width:100%;aspect-ratio:3/2;background:#000}
+  .cap{display:flex;justify-content:space-between;padding:8px 13px;font-size:12.5px;color:var(--muted)}
+  .cap b{color:var(--ink);font-size:14px}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:34px;border-top:1px solid var(--line);padding-top:14px;max-width:880px}
+  .foot a{color:var(--accent)}
+</style></head><body>
+<div class="wrap">
+  <h1>Hand & Object Tracking</h1>
+  <nav class="nav"><a href="presentation.html">Dynamic Scenes</a><a href="collected_demos.html" class="n-raw">Collected Demos</a><a href="hand_tracking.html" class="n-track">Hand Tracking</a><a href="preprocessing.html" class="n-clean">Preprocessing</a><a href="index.html">All Viewers</a></nav>
+  <p class="sub">The same recordings with the tracking pipeline overlaid: MPS hand landmarks and arm
+     keypoints (warm colors), tracked cup keypoints (cyan) and plate keypoints (green) — selected on
+     the segmentation masks, followed by CoTracker in 2D, and triangulated to metric 3D against the
+     SLAM trajectory. Only the manipulation window is shown.</p>
+  <div id="gbar">
+    <b style="font-size:12.5px;color:var(--muted)">ALL CLIPS:</b>
+    <button id="Gplay">⏸ pause all</button>
+    <button id="Grestart">⟲ restart all</button>
+    <label style="color:var(--muted)">speed <select id="Gspeed">
+      <option value="0.5">0.5×</option><option value="1" selected>1×</option>
+      <option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+    <span style="color:var(--muted);font-size:12px">clips play while visible · native controls on each tile</span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="foot">cup_plate_02 · 64 human demonstrations · Project Aria + MPS. Related:
+  <a href="presentation.html">dynamic scene gallery</a> · <a href="index.html">all viewers &amp; methods</a>.</p>
+</div>
+<script>
+const CLIPS = [{"id": "000", "src": "track_000.mp4", "n": 566}, {"id": "001", "src": "track_001.mp4", "n": 319}, {"id": "002", "src": "track_002.mp4", "n": 421}, {"id": "003", "src": "track_003.mp4", "n": 402}, {"id": "004", "src": "track_004.mp4", "n": 454}, {"id": "005", "src": "track_005.mp4", "n": 436}, {"id": "006", "src": "track_006.mp4", "n": 469}, {"id": "007", "src": "track_007.mp4", "n": 468}, {"id": "008", "src": "track_008.mp4", "n": 464}, {"id": "009", "src": "track_009.mp4", "n": 425}, {"id": "010", "src": "track_010.mp4", "n": 569}, {"id": "011", "src": "track_011.mp4", "n": 500}, {"id": "012", "src": "track_012.mp4", "n": 365}, {"id": "013", "src": "track_013.mp4", "n": 344}, {"id": "014", "src": "track_014.mp4", "n": 560}, {"id": "015", "src": "track_015.mp4", "n": 426}, {"id": "016", "src": "track_016.mp4", "n": 293}, {"id": "017", "src": "track_017.mp4", "n": 405}, {"id": "018", "src": "track_018.mp4", "n": 527}, {"id": "019", "src": "track_019.mp4", "n": 409}, {"id": "020", "src": "track_020.mp4", "n": 538}, {"id": "021", "src": "track_021.mp4", "n": 220}, {"id": "022", "src": "track_022.mp4", "n": 576}, {"id": "023", "src": "track_023.mp4", "n": 500}, {"id": "024", "src": "track_024.mp4", "n": 461}, {"id": "025", "src": "track_025.mp4", "n": 668}, {"id": "026", "src": "track_026.mp4", "n": 576}, {"id": "027", "src": "track_027.mp4", "n": 587}, {"id": "028", "src": "track_028.mp4", "n": 434}, {"id": "029", "src": "track_029.mp4", "n": 486}, {"id": "030", "src": "track_030.mp4", "n": 527}, {"id": "031", "src": "track_031.mp4", "n": 492}, {"id": "032", "src": "track_032.mp4", "n": 392}, {"id": "033", "src": "track_033.mp4", "n": 540}, {"id": "034", "src": "track_034.mp4", "n": 404}, {"id": "035", "src": "track_035.mp4", "n": 274}, {"id": "036", "src": "track_036.mp4", "n": 428}, {"id": "037", "src": "track_037.mp4", "n": 663}, {"id": "038", "src": "track_038.mp4", "n": 417}, {"id": "039", "src": "track_039.mp4", "n": 365}, {"id": "040", "src": "track_040.mp4", "n": 443}, {"id": "041", "src": "track_041.mp4", "n": 452}, {"id": "042", "src": "track_042.mp4", "n": 445}, {"id": "043", "src": "track_043.mp4", "n": 455}, {"id": "044", "src": "track_044.mp4", "n": 393}, {"id": "045", "src": "track_045.mp4", "n": 344}, {"id": "046", "src": "track_046.mp4", "n": 531}, {"id": "047", "src": "track_047.mp4", "n": 385}, {"id": "048", "src": "track_048.mp4", "n": 475}, {"id": "049", "src": "track_049.mp4", "n": 460}, {"id": "050", "src": "track_050.mp4", "n": 529}, {"id": "051", "src": "track_051.mp4", "n": 397}, {"id": "052", "src": "track_052.mp4", "n": 442}, {"id": "053", "src": "track_053.mp4", "n": 481}, {"id": "054", "src": "track_054.mp4", "n": 493}, {"id": "055", "src": "track_055.mp4", "n": 520}, {"id": "056", "src": "track_056.mp4", "n": 531}, {"id": "057", "src": "track_057.mp4", "n": 455}, {"id": "058", "src": "track_058.mp4", "n": 621}, {"id": "059", "src": "track_059.mp4", "n": 528}, {"id": "060", "src": "track_060.mp4", "n": 386}, {"id": "061", "src": "track_061.mp4", "n": 374}, {"id": "062", "src": "track_062.mp4", "n": 221}, {"id": "063", "src": "track_063.mp4", "n": 408}];
+let playing = true;
+const grid = document.getElementById("grid");
+const vids = [];
+for (const c of CLIPS) {
+  const cell = document.createElement("div"); cell.className = "cell";
+  cell.innerHTML = '<video muted loop playsinline controls preload="none" src="media_cup_plate_02/' + c.src +
+    '"></video><div class="cap"><b>demo ' + c.id + '</b><span>' + c.n + ' frames (manipulation window)</span></div>';
+  grid.appendChild(cell);
+  vids.push(cell.querySelector("video"));
+}
+const io = new IntersectionObserver(es => {
+  for (const e of es) {
+    const v = e.target;
+    if (e.isIntersecting) { if (playing) v.play().catch(() => {}); }
+    else v.pause();
+  }
+}, {rootMargin: "120px"});
+vids.forEach(v => io.observe(v));
+document.getElementById("Gplay").addEventListener("click", e => {
+  playing = !playing;
+  e.target.textContent = playing ? "⏸ pause all" : "▶ play all";
+  vids.forEach(v => { if (playing) { const r = v.getBoundingClientRect();
+    if (r.bottom > 0 && r.top < innerHeight) v.play().catch(() => {}); } else v.pause(); });
+});
+document.getElementById("Grestart").addEventListener("click", () => vids.forEach(v => { v.currentTime = 0; }));
+document.getElementById("Gspeed").addEventListener("change", e => vids.forEach(v => v.playbackRate = +e.target.value));
+</script></body></html>
