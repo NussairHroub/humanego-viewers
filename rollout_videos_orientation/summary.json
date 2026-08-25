@@ -1,0 +1,18 @@
+[
+  {
+    "rec": "rollout_169_20260825_153136",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 8,
+    "span": 38.85171937942505,
+    "final_done": 0.05257440161978262,
+    "sec_per_step": 5.55024562563215
+  },
+  {
+    "rec": "rollout_170_20260825_153325",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 7,
+    "span": 32.84730005264282,
+    "final_done": 0.05214112566097102,
+    "sec_per_step": 5.474550008773804
+  }
+]

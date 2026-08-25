@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Orientation — cup_plate_02</title>
+<style>
+  :root{--bg:#12110d;--card:#1c1b17;--ink:#e9e7e2;--muted:#a09d95;--line:#3a3934;--accent:#6da7ec}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 22px 80px}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.01em}
+  .nav{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 14px}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:4px 11px;
+    border:1px solid var(--line);border-radius:16px}
+  .nav a.on{color:var(--ink);border-color:#5a594f;background:var(--card)}
+  .sub{color:var(--muted);font-size:15px;max-width:880px;margin:0 0 16px}
+  .sub a{color:var(--accent)}
+  .stats{display:flex;gap:26px;flex-wrap:wrap;margin:16px 0 20px;color:var(--muted);font-size:13.5px}
+  .stats b{color:var(--ink);font-size:17px;display:block;font-variant-numeric:tabular-nums}
+  .callout{background:var(--card);border:1px solid var(--line);border-left:3px solid #a8792e;
+    border-radius:10px;padding:11px 15px;font-size:13.5px;color:var(--muted);max-width:880px;margin:0 0 22px}
+  .callout b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:18px}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .cell video{display:block;width:100%;background:#000}
+  .switch{display:flex;gap:5px;padding:10px 13px 0}
+  .switch button{background:#2b2a26;border:1px solid #4a4944;color:var(--muted);border-radius:8px;
+    padding:3px 11px;cursor:pointer;font-size:12.5px}
+  .switch button.on{color:var(--ink);border-color:#6da7ec;background:#22262c}
+  .cap{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    padding:9px 13px 4px;font-size:12px;color:var(--muted)}
+  .cap b{color:var(--ink);font-size:15px}
+  .cap .t{font-size:11.5px;opacity:.75}
+  .note{margin:0;padding:0 13px 13px;font-size:13px;color:var(--muted)}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:34px;border-top:1px solid var(--line);
+    padding-top:14px;max-width:880px}
+  .foot a{color:var(--accent)}
+</style></head><body>
+<div class="wrap">
+  <h1>Orientation</h1>
+  <nav class="nav"><a href="rollout_camera_gallery.html">Robot Rollouts</a><a href="orientation.html" class="on">Orientation</a><a href="presentation.html">Dynamic Scenes</a><a href="collected_demos.html">Collected Demos</a><a href="index.html">All Viewers</a></nav>
+  <p class="sub">Two closed-loop runs on the ALOHA rig, 25&nbsp;August&nbsp;2026, with the cup <b>lying on its
+  side</b> instead of standing upright — and in two different orientations, roughly 180° apart. In every
+  collected demonstration the cup stands upright (see <a href="collected_demos.html">the demos</a>), so this
+  is a configuration the policy never saw in training. Both runs use the released
+  <b>HumanEgo baseline</b> (RGB&nbsp;+&nbsp;ICT). Each tile starts on the plain camera view; switch it to
+  <b>all panels</b> to see the detections, the arm-inpainted policy input and the gripper overlay for the
+  same run. Playback is ~25× real time — the header carries true elapsed seconds.</p>
+  <div class="stats">
+    <div><b>2</b>runs</div>
+    <div><b>15</b>policy steps</div>
+    <div><b>5.5 s</b>per policy step</div>
+    <div><b>0.05</b>highest done-probability (threshold 0.80)</div>
+  </div>
+  <p class="callout"><b>Same caveat as the other rollouts:</b> the termination head never fired here either
+  (0.05 against a 0.80 threshold), so neither episode ended on the policy's
+  own judgement. What the cup's orientation does to the reach and grasp is what these two are for — watch the
+  approach, not the ending.</p>
+  <div class="grid">
+    <div class="cell">
+      <div class="switch"><button class="on" data-src="rollout_videos_orientation/rollout_169_20260825_153136_cam.mp4">camera</button><button data-src="rollout_videos_orientation/rollout_169_20260825_153136.mp4">all panels</button></div>
+      <video muted loop playsinline controls preload="metadata" src="rollout_videos_orientation/rollout_169_20260825_153136_cam.mp4"></video>
+      <div class="cap"><span><b>rollout 169</b> <span class="t">15:31</span></span>
+        <span>8 steps · 39 s real · 5.6 s/step · done 0.05</span></div>
+      <p class="note">Cup on its side, opening toward the plate. The run ends with the cup released on the plate.</p>
+    </div>
+    <div class="cell">
+      <div class="switch"><button class="on" data-src="rollout_videos_orientation/rollout_170_20260825_153325_cam.mp4">camera</button><button data-src="rollout_videos_orientation/rollout_170_20260825_153325.mp4">all panels</button></div>
+      <video muted loop playsinline controls preload="metadata" src="rollout_videos_orientation/rollout_170_20260825_153325_cam.mp4"></video>
+      <div class="cap"><span><b>rollout 170</b> <span class="t">15:33</span></span>
+        <span>7 steps · 33 s real · 5.5 s/step · done 0.05</span></div>
+      <p class="note">Cup on its side, opening toward the arm — rotated roughly 180° from the other run. The run ends with the cup at the plate's right rim.</p>
+    </div>
+  </div>
+  <p class="foot">Rendered from the per-step frames in <code>results/rollout_169_*</code> and
+  <code>results/rollout_170_*</code>. Related: <a href="rollout_camera_gallery.html">the 19 earlier rollouts</a>
+  · <a href="index.html">all viewers &amp; methods</a>.</p>
+</div>
+<script>
+document.querySelectorAll(".cell").forEach(cell => {
+  const v = cell.querySelector("video");
+  cell.querySelectorAll(".switch button").forEach(b => b.addEventListener("click", () => {
+    if (b.classList.contains("on")) return;
+    cell.querySelectorAll(".switch button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    const playing = !v.paused;
+    v.src = b.dataset.src;
+    v.load();
+    if (playing) v.play().catch(() => {});
+  }));
+});
+const io = new IntersectionObserver(es => {
+  for (const e of es) e.isIntersecting ? e.target.play().catch(() => {}) : e.target.pause();
+}, {rootMargin: "150px"});
+document.querySelectorAll("video").forEach(v => io.observe(v));
+</script></body></html>

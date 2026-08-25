@@ -7,7 +7,7 @@ each demo's registered camera frustums and head trajectory.
 
 **Presentation galleries:** [Dynamic Scene Gallery](presentation.html) ·
 [Collected Demos](collected_demos.html) · [Hand Tracking](hand_tracking.html) ·
-[Preprocessing](preprocessing.html) · [Object Orientations](object_orientations.html) · Robot Rollouts ([camera only](rollout_camera_gallery.html) · [all panels](rollout_gallery.html))
+[Preprocessing](preprocessing.html) · [Object Orientations](object_orientations.html) · Robot Rollouts ([camera only](rollout_camera_gallery.html) · [all panels](rollout_gallery.html)) · [Orientation](orientation.html)
 (demo clips in `media_cup_plate_02/`, rollout clips in `rollout_videos_after_143/` and `rollout_videos_camera/`)
 
 | Task | Demos | Viewer | Method |
