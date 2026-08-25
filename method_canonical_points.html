@@ -38,7 +38,8 @@
   <p class="sub">A prototype experiment: reconstruct each task object from ONE image with SAM 3D Objects,
   register the reconstruction into the demo world, and sample a fixed set of canonical points in the
   object's own frame — the same physical points in every demo, instead of per-recording keypoint picks.</p>
-  <p><a class="btn" href="canonical_points_viewer.html">open the viewer →</a>
+  <p><a class="btn" href="presentation.html">open the 64-demo gallery →</a>
+     <a class="btn" href="canonical_points_viewer.html">open the viewer →</a>
      <a class="btn" href="canonical_points_seq_viewer.html">open the frame-slider viewer →</a>
      <a class="btn" href="canonical_points_tracked_viewer.html">open the tracked-cup viewer →</a></p>
 
@@ -109,10 +110,33 @@
   part to tighten (pin its vertical to the table plane, its scale to the rim keypoints) before training on
   canonical points.</p>
 
+  <h2>All 64 recordings</h2>
+  <p>The reconstruction was then run across the whole dataset — one SAM 3D pass per object per recording,
+  with the pipeline loaded once for the batch (63 recordings, no failures). Registration is where it can
+  go wrong, and it did: the flat plate leaves the in-plane and vertical ICP degrees of freedom weakly
+  constrained, and roughly half the recordings landed the plate in a wrong-pose minimum (medians up to
+  94&nbsp;mm). A post-hoc pass fixed them without re-running SAM 3D: take the model/keypoint size ratio
+  from the recordings that registered cleanly, rescale the failed model to it, then refit pose-only
+  (SE(3) ICP) and refine the vertical against the keypoints.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Batch result</th><th>value</th></tr></thead>
+    <tbody>
+      <tr><td>recordings reconstructed</td><td>64 / 64 (0 SAM 3D failures)</td></tr>
+      <tr><td>plate registrations repaired by the post-hoc pass</td><td>32 of 37 (e.g. 94 → 6 mm)</td></tr>
+      <tr><td>keypoint → surface, median over clean recordings</td><td>cup 7.0 mm · plate 8.6 mm</td></tr>
+      <tr><td>recordings passing the 25 mm check on both objects</td><td>60 / 64</td></tr>
+      <tr><td>flagged (excluded from training, shown in the gallery)</td><td>010, 023, 037, 062</td></tr>
+    </tbody>
+  </table></div>
+  <p>The four flagged recordings kept a bad reconstruction even after a second SAM 3D sample with a
+  different seed — their object models are wrong, not merely mis-placed. They are visible as
+  <b>⚠&nbsp;reg</b> tiles in the <a style="color:var(--accent)" href="presentation.html">gallery</a>,
+  where the failure reads at a glance.</p>
+
   <h2>Honest caveats</h2>
   <ul>
-    <li>One frame of one recording so far; the value claim — the <em>same</em> canonical points across all 64
-      demos — still needs a cross-demo consistency check.</li>
+    <li>Registration quality is earned per object per recording, not given by SAM 3D — the 25 mm QA
+      check is what separates a usable model from a wrong one, and 4 recordings fail it.</li>
     <li>SAM 3D also predicts its own object pose per image (recorded, not yet verified against the
       SLAM-triangulated poses).</li>
     <li>SAM 3D outputs are normalized-scale; metric scale here comes entirely from the ICP anchors.</li>
