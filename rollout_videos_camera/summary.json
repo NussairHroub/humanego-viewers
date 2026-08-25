@@ -1,0 +1,154 @@
+[
+  {
+    "rec": "rollout_144_20260824_214717",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 11,
+    "span": 71.57770562171936,
+    "final_done": 0.05347960049746224,
+    "sec_per_step": 7.157770562171936
+  },
+  {
+    "rec": "rollout_145_20260824_215106",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 8,
+    "span": 41.82011389732361,
+    "final_done": 0.05373000888678005,
+    "sec_per_step": 5.974301985331944
+  },
+  {
+    "rec": "rollout_146_20260824_215437",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 15,
+    "span": 82.47273111343384,
+    "final_done": 0.05338514565566162,
+    "sec_per_step": 5.890909365245274
+  },
+  {
+    "rec": "rollout_147_20260824_215749",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 1,
+    "span": 0.0,
+    "final_done": 0.05382846339520291,
+    "sec_per_step": 0.0
+  },
+  {
+    "rec": "rollout_148_20260824_215843",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 10,
+    "span": 56.53209900856018,
+    "final_done": 0.05126927529138035,
+    "sec_per_step": 6.281344334284465
+  },
+  {
+    "rec": "rollout_149_20260824_220058",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 9,
+    "span": 45.1771125793457,
+    "final_done": 0.05119817526363906,
+    "sec_per_step": 5.647139072418213
+  },
+  {
+    "rec": "rollout_150_20260824_220336",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 20,
+    "span": 153.80526161193848,
+    "final_done": 0.05444376856294081,
+    "sec_per_step": 8.095013769049393
+  },
+  {
+    "rec": "rollout_151_20260824_220720",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 9,
+    "span": 84.70376300811768,
+    "final_done": 0.05402109458931898,
+    "sec_per_step": 10.58797037601471
+  },
+  {
+    "rec": "rollout_152_20260824_221028",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 13,
+    "span": 81.55668425559998,
+    "final_done": 0.05322291642714874,
+    "sec_per_step": 6.796390354633331
+  },
+  {
+    "rec": "rollout_153_20260824_221308",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 12,
+    "span": 101.10585308074951,
+    "final_done": 0.054566709861632826,
+    "sec_per_step": 9.191441189159047
+  },
+  {
+    "rec": "rollout_154_20260824_221635",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 8,
+    "span": 39.860995054244995,
+    "final_done": 0.05395570460300542,
+    "sec_per_step": 5.694427864892142
+  },
+  {
+    "rec": "rollout_155_20260824_221839",
+    "policy": "HumanEgo (rgb_ict)",
+    "steps": 11,
+    "span": 78.86233234405518,
+    "final_done": 0.05328229667278784,
+    "sec_per_step": 7.886233234405518
+  },
+  {
+    "rec": "rollout_156_20260824_222308",
+    "policy": "PcdV1 (pointcloud)",
+    "steps": 15,
+    "span": 67.86132311820984,
+    "final_done": 0.04193519779662066,
+    "sec_per_step": 4.847237365586417
+  },
+  {
+    "rec": "rollout_157_20260824_222619",
+    "policy": "PcdV1 (pointcloud)",
+    "steps": 12,
+    "span": 53.20540761947632,
+    "final_done": 0.0062568408376677456,
+    "sec_per_step": 4.836855238134211
+  },
+  {
+    "rec": "rollout_158_20260824_222925",
+    "policy": "PcdV1 (pointcloud)",
+    "steps": 7,
+    "span": 28.5234477519989,
+    "final_done": 1.2728370651659032e-09,
+    "sec_per_step": 4.753907958666484
+  },
+  {
+    "rec": "rollout_159_20260824_223118",
+    "policy": "PcdV1 (pointcloud)",
+    "steps": 7,
+    "span": 28.710424423217773,
+    "final_done": 4.062896555627809e-10,
+    "sec_per_step": 4.785070737202962
+  },
+  {
+    "rec": "rollout_160_20260824_223313",
+    "policy": "PcdV1 (pointcloud)",
+    "steps": 4,
+    "span": 14.255730152130127,
+    "final_done": 4.29789253430817e-10,
+    "sec_per_step": 4.751910050710042
+  },
+  {
+    "rec": "rollout_161_20260824_223454",
+    "policy": "PcdV1 (pointcloud)",
+    "steps": 3,
+    "span": 9.56998896598816,
+    "final_done": 2.383579588072668e-10,
+    "sec_per_step": 4.78499448299408
+  },
+  {
+    "rec": "rollout_162_20260824_223621",
+    "policy": "PcdV1 (pointcloud)",
+    "steps": 21,
+    "span": 97.60477948188782,
+    "final_done": 7.744503261623258e-12,
+    "sec_per_step": 4.880238974094391
+  }
+]
