@@ -71,11 +71,21 @@
         cursor:pointer;transition:border-color .12s,transform .12s}
   .cell:hover{border-color:#6a695f;transform:translateY(-1px)}
   .cell.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .cvwrap{position:relative}
   .cell canvas{display:block;width:100%;aspect-ratio:1.2;background:#141310;cursor:grab;touch-action:none}
   .cell canvas:active{cursor:grabbing}
-  .cap{display:flex;justify-content:space-between;align-items:baseline;padding:7px 10px;font-size:11.5px;color:var(--muted)}
+  .tools{position:absolute;top:7px;right:7px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+  .cvwrap:hover .tools{opacity:1}
+  .tools button{width:24px;height:24px;border-radius:7px;border:1px solid #4a4944;
+    background:rgba(30,30,26,.9);color:#e9e7e2;font-size:13px;line-height:1;cursor:pointer;padding:0}
+  .tools button:hover{background:#3a3934}
+  .cap{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 10px;
+       font-size:11.5px;color:var(--muted);line-height:1.35}
+  .cap>span{display:flex;align-items:center;gap:5px;white-space:nowrap}
   .cap b{color:var(--ink);font-size:13px;font-variant-numeric:tabular-nums}
-  .cap .on{color:var(--accent)}
+  .chip{display:inline-block;padding:0 7px;border-radius:8px;font-size:10.5px;background:#666;color:#fff}
+  .chip.on{background:#3a5}
+  .qflag{display:inline-block;padding:0 7px;border-radius:8px;font-size:10.5px;background:#7a4a1e;color:#ffd9b0}
   .foot{color:var(--muted);font-size:12.5px;margin-top:34px;border-top:1px solid var(--line);padding-top:14px;max-width:880px}
   .foot a{color:var(--accent)} .foot b{color:var(--ink)}
   .loading{color:var(--muted);font-size:13px;padding:10px 0}
@@ -115,6 +125,7 @@
     <label><input type="checkbox" id="Tlegacy" checked><span class="sw2" style="background:var(--legacy)"></span><span>legacy static</span></label>
     <label><input type="checkbox" id="Ttrail" checked><span>cup trail</span></label>
     <label><input type="checkbox" id="Trot"><span>auto-rotate</span></label>
+    <label><input type="checkbox" id="Thide"><span>hide flagged</span></label>
     <button id="reset">reset view</button>
   </div>
   <p class="modenote" id="modenote"></p>
@@ -334,6 +345,8 @@ document.getElementById("copy").addEventListener("click",e=>{ if(!sel)return;
 // ---------------------------------------------------------------- input
 for(const k of Object.keys(T)){const el=document.getElementById("T"+k);
   if(el)el.addEventListener("change",e=>{T[k]=e.target.checked?1:0;draw();redrawTiles();});}
+document.getElementById("Thide").addEventListener("change",e=>{
+  document.querySelectorAll('.cell[data-flag="1"]').forEach(c=>c.style.display=e.target.checked?"none":"");});
 document.querySelectorAll("#hseg button").forEach(b=>b.addEventListener("click",()=>{
   HMODE=b.dataset.m;
   document.querySelectorAll("#hseg button").forEach(x=>x.classList.toggle("on",x===b));
@@ -395,12 +408,21 @@ function buildGrid(pre){
     if(!p || !p.hands || !p.lcup) throw new Error("preview schema is older than this page");
     const cell=document.createElement("div");
     cell.className="cell"; cell.dataset.rec=id;
-    cell.innerHTML='<canvas></canvas><div class="cap"><b>'+id+'</b><span>'+p.F+' fr · '+p.contour+'%</span></div>';
+    if(p.flag)cell.dataset.flag="1";
+    cell.innerHTML='<div class="cvwrap"><canvas></canvas><div class="tools">'+
+      '<button data-act="in" title="zoom in">+</button>'+
+      '<button data-act="out" title="zoom out">\u2212</button>'+
+      '<button data-act="rst" title="reset this tile">\u2302</button></div></div>'+
+      '<div class="cap"><span><b>'+id+'</b><span class="chip">\u00b7</span>'+
+      (p.flag?'<span class="qflag" title="low per-frame coverage or a large frame-to-frame jump \u2014 review before training">\u26a0 QA</span>':'')+
+      '</span><span title="worst frame-to-frame cup-centroid jump">'+p.F+' fr \u00b7 '+p.contour+
+      '% \u00b7 jump '+p.jump+' mm</span></div>';
     g.appendChild(cell);
     const c=cell.querySelector("canvas");
     const n=p.n, M=pre.M, hands={};
     for(const k in p.hands) hands[k]=decF(p.hands[k], n*p.hn[k]*3);
-    const t={id,el:cell,cv:c,cx:c.getContext("2d"),n,M,vis:false,f:0,acc:0,
+    const t={id,el:cell,cv:c,cx:c.getContext("2d"),chip:cell.querySelector(".chip"),
+      flag:!!p.flag,n,M,vis:false,f:0,acc:0,
       yaw:-0.6,pitch:0.5,C:p.centre,hands,hn:p.hn,
       cup:decF(p.cup,n*M*3), pla:decF(p.plate,n*M*3), gra:decU(p.grasp),
       lcup:decFAll(p.lcup), lplate:decFAll(p.lplate), drag:null, moved:0};
@@ -410,6 +432,13 @@ function buildGrid(pre){
     ds.sort((a,b)=>a-b); t.rad=ds.length?ds[Math.floor(0.95*(ds.length-1))]:0.3;
     t.dist0=t.rad*2.3; t.dist=t.dist0;
 
+    cell.querySelector(".tools").addEventListener("click",e=>{
+      const a=e.target.dataset&&e.target.dataset.act; if(!a)return;
+      e.stopPropagation();                       // a tool press is not "load this recording"
+      if(a==="in")       t.dist=Math.max(t.dist0*0.3, t.dist/1.3);
+      else if(a==="out") t.dist=Math.min(t.dist0*4,  t.dist*1.3);
+      else {t.yaw=-0.6;t.pitch=0.5;t.dist=t.dist0;}
+      drawTile(t);});
     // rotate by dragging; zoom on ctrl/cmd-scroll so plain scrolling still moves the page
     c.addEventListener("pointerdown",e=>{t.drag={x:e.clientX,y:e.clientY};t.moved=0;
       try{c.setPointerCapture(e.pointerId);}catch(_){}});
@@ -425,7 +454,8 @@ function buildGrid(pre){
       t.dist=Math.max(t.dist0*0.3,Math.min(t.dist0*4,t.dist*(1+Math.sign(e.deltaY)*0.12)));
       drawTile(t); },{passive:false});
     // a drag must not also count as "load this recording"
-    cell.addEventListener("click",()=>{ if(t.moved>=4){t.moved=0;return;}
+    cell.addEventListener("click",e=>{ if(t.moved>=4){t.moved=0;return;}
+      if(e.target.closest&&e.target.closest(".tools"))return;
       loadRec(id); window.scrollTo({top:0,behavior:"smooth"}); });
 
     tiles.push(t); io.observe(c);
@@ -484,6 +514,8 @@ function drawTile(t){
     if(c==="legacy"){cx.beginPath();cx.arc(x,y,r,0,6.283);cx.strokeStyle="rgba(212,103,79,.55)";cx.lineWidth=1;cx.stroke();}
     else {cx.beginPath();cx.arc(x,y,r,0,6.283);cx.fillStyle=TCOL[c];cx.fill();}
   }
+  if(t.chip){const gg=t.gra[t.f]>0.5;
+    t.chip.textContent=gg?"GRASP":"open"; t.chip.className="chip"+(gg?" on":"");}
 }
 function redrawTiles(){ for(const t of tiles) if(t.vis) drawTile(t); }
 function tickTiles(dt){
@@ -524,6 +556,11 @@ function checkBlocked(){
   const start=(location.hash||"").replace("#","");
   await loadRec(ids.includes(start)?start:ids[0]);
   requestAnimationFrame(loop);
+  // rAF stalls in occluded or backgrounded windows, which froze every tile; nudge the same step
+  // function from a timer when that happens, exactly as the Dynamic Scenes gallery does.
+  setInterval(()=>{ if(performance.now()-last>400){ const dt=performance.now()-last;
+    last=performance.now(); if(playing&&D){acc+=dt;if(acc>55){acc=0;frame=(frame+1)%D.F;}}
+    if(D)draw(); tickTiles(dt); } },200);
   setTimeout(checkBlocked,800);
 })();
 </script>
