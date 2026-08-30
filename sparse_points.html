@@ -69,7 +69,8 @@
         cursor:pointer;transition:border-color .12s,transform .12s}
   .cell:hover{border-color:#6a695f;transform:translateY(-1px)}
   .cell.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-  .cell canvas{display:block;width:100%;aspect-ratio:1.2;background:#141310}
+  .cell canvas{display:block;width:100%;aspect-ratio:1.2;background:#141310;cursor:grab;touch-action:none}
+  .cell canvas:active{cursor:grabbing}
   .cap{display:flex;justify-content:space-between;align-items:baseline;padding:7px 10px;font-size:11.5px;color:var(--muted)}
   .cap b{color:var(--ink);font-size:13px;font-variant-numeric:tabular-nums}
   .cap .on{color:var(--accent)}
@@ -145,9 +146,11 @@
 
   <h2>All recordings</h2>
   <p class="sub" style="margin-bottom:0">Each tile is the same per-frame extraction for one demonstration,
-  decimated for the grid. <b>Click one to load it in the viewer above.</b> Tiles animate when scrolled
-  into view; the caption gives the frame count and what fraction of object extractions came from that
-  frame's own contour rather than a held fallback.</p>
+  decimated for the grid. <b>Click one to load it in the viewer above.</b> Every tile is a live view with the same channels as the
+  canvas above and follows the controls up there — hand channel, cup, plate, legacy static, trail.
+  <b>Drag a tile to rotate it</b>, ⌘/ctrl-scroll to zoom (plain scrolling still moves the page), and
+  <i>reset view</i> restores every tile. The caption gives the frame count and what fraction of object
+  extractions came from that frame's own contour rather than a held fallback.</p>
   <div class="loading" id="gridloading">loading recordings…</div>
   <div class="grid" id="grid"></div>
 
@@ -168,6 +171,7 @@ const DATA_DIR="sp_data";
 function decF(b,n){const s=atob(b),u=Uint8Array.from(s,c=>c.charCodeAt(0));const v=new DataView(u.buffer);
   const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=v.getFloat32(i*4,true);return a;}
 function decU(b){const s=atob(b);return Uint8Array.from(s,c=>c.charCodeAt(0));}
+function decFAll(b){return decF(b, Math.floor(atob(b).length/4));}   // length from the payload itself
 
 const HNAMES={fk:["action frame origin","+x axis tip","+y axis tip","+z axis tip"],
               smoothed5:["wrist","thumb tip","index tip","thumb MCP","index MCP"]};
@@ -206,7 +210,7 @@ function decode(p){
   const d={id:p.demo,F,M,idx:p.idx,C:p.centre,stats:p.stats,
     CUP:decF(p.cup,F*M*3), PLA:decF(p.plate,F*M*3),
     SRC:decU(p.src), GRA:decU(p.grasp), HM,
-    LCUP:decF(p.legacy_cup,60), LPLA:decF(p.legacy_plate,60)};
+    LCUP:decFAll(p.legacy_cup), LPLA:decFAll(p.legacy_plate)};
   // frame the camera on the 95th percentile of point radius, not the max: a few strays sit far
   // enough out that framing on them shrinks the demo to a fraction of the canvas.
   const ds=[]; const streams=[d.CUP,d.PLA]; for(const k in HM) streams.push(HM[k].a);
@@ -250,8 +254,8 @@ function draw(){
   const push=(x,y,z,col,rad,meta)=>{ if(!isFinite(x))return; const p=proj(x,y,z); if(!p)return;
     items.push([p[2],p[0],p[1],col,rad*Math.max(0.55,Math.min(2.2,DIST0*0.9*p[3])),meta,x,y,z]); };
   if(T.legacy){
-    for(let i=0;i<20;i++) push(D.LCUP[i*3],D.LCUP[i*3+1],D.LCUP[i*3+2],"legacy",3.1,{e:"cup (legacy static)",i,s:1,noframe:1});
-    for(let i=0;i<20;i++) push(D.LPLA[i*3],D.LPLA[i*3+1],D.LPLA[i*3+2],"legacy",3.1,{e:"plate (legacy static)",i,s:1,noframe:1});
+    for(let i=0;i<D.LCUP.length/3;i++) push(D.LCUP[i*3],D.LCUP[i*3+1],D.LCUP[i*3+2],"legacy",3.1,{e:"cup (legacy static)",i,s:1,noframe:1});
+    for(let i=0;i<D.LPLA.length/3;i++) push(D.LPLA[i*3],D.LPLA[i*3+1],D.LPLA[i*3+2],"legacy",3.1,{e:"plate (legacy static)",i,s:1,noframe:1});
   }
   if(T.trail){
     ctx.beginPath(); let started=false;
@@ -324,12 +328,12 @@ document.getElementById("copy").addEventListener("click",e=>{ if(!sel)return;
 
 // ---------------------------------------------------------------- input
 for(const k of Object.keys(T)){const el=document.getElementById("T"+k);
-  if(el)el.addEventListener("change",e=>{T[k]=e.target.checked?1:0;draw();});}
+  if(el)el.addEventListener("change",e=>{T[k]=e.target.checked?1:0;draw();redrawTiles();});}
 document.querySelectorAll("#hseg button").forEach(b=>b.addEventListener("click",()=>{
   HMODE=b.dataset.m;
   document.querySelectorAll("#hseg button").forEach(x=>x.classList.toggle("on",x===b));
   if(sel&&sel.meta.s===2){sel=null;showSel();}
-  setNote(); draw();}));
+  setNote(); draw(); redrawTiles();}));
 function setNote(){
   const h=D&&D.HM[HMODE];
   document.getElementById("modenote").innerHTML=MODENOTE[HMODE]+
@@ -351,7 +355,10 @@ cv.addEventListener("wheel",e=>{e.preventDefault();
   dist=Math.max(DIST0*0.28,Math.min(DIST0*4,dist*(1+Math.sign(e.deltaY)*0.09)));draw();},{passive:false});
 document.getElementById("scrub").addEventListener("input",e=>{frame=+e.target.value;if(sel){sel=null;showSel();}draw();});
 document.getElementById("play").addEventListener("click",e=>{playing=!playing;e.target.textContent=playing?"⏸ pause":"▶ play";});
-document.getElementById("reset").addEventListener("click",()=>{yaw=-0.6;pitch=0.5;dist=DIST0;draw();});
+document.getElementById("reset").addEventListener("click",()=>{
+  yaw=-0.6;pitch=0.5;dist=DIST0;draw();
+  for(const t of tiles){t.yaw=-0.6;t.pitch=0.5;t.dist=t.dist0;}
+  redrawTiles();});
 addEventListener("keydown",e=>{const t=e.target;
   if(t&&t.id==="scrub"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
   if(!D)return;
@@ -370,31 +377,57 @@ function loop(t){const dt=t-last;last=t;
   requestAnimationFrame(loop);}
 
 // ---------------------------------------------------------------- grid of every recording
+// Tiles are small viewers, not thumbnails: they carry every channel the main canvas does, obey the
+// same global toggles and hand-channel switch, and each keeps its own orientation and zoom.
 const tiles=[];
+const TCOL={cup:"#c9a476",plate:"#dddddd",hand:"#7ad97a",fk:"#6da7ec"};
 function buildGrid(pre){
   const g=document.getElementById("grid");
   for(const id of pre.recs){
+   try{
     const p=pre.previews[id];
     const cell=document.createElement("div");
     cell.className="cell"; cell.dataset.rec=id;
     cell.innerHTML='<canvas></canvas><div class="cap"><b>'+id+'</b><span>'+p.F+' fr · '+p.contour+'%</span></div>';
-    cell.addEventListener("click",()=>{ loadRec(id); window.scrollTo({top:0,behavior:"smooth"}); });
     g.appendChild(cell);
     const c=cell.querySelector("canvas");
-    const n=p.n, M=pre.M;
-    const t={id,el:cell,cv:c,cx:c.getContext("2d"),n,M,vis:false,f:0,acc:0,yaw:-0.6,
-      C:p.centre, cup:decF(p.cup,n*M*3), pla:decF(p.plate,n*M*3), hand:decF(p.hand,n*3),
-      gra:decU(p.grasp)};
+    const n=p.n, M=pre.M, hands={};
+    for(const k in p.hands) hands[k]=decF(p.hands[k], n*p.hn[k]*3);
+    const t={id,el:cell,cv:c,cx:c.getContext("2d"),n,M,vis:false,f:0,acc:0,
+      yaw:-0.6,pitch:0.5,C:p.centre,hands,hn:p.hn,
+      cup:decF(p.cup,n*M*3), pla:decF(p.plate,n*M*3), gra:decU(p.grasp),
+      lcup:decFAll(p.lcup), lplate:decFAll(p.lplate), drag:null, moved:0};
     const ds=[];
     for(const A of [t.cup,t.pla]) for(let i=0;i<A.length;i+=3){ if(!isFinite(A[i]))continue;
       ds.push(Math.hypot(A[i]-t.C[0],A[i+1]-t.C[1],A[i+2]-t.C[2])); }
-    ds.sort((a,b)=>a-b); t.rad=ds.length?ds[Math.floor(0.95*(ds.length-1))]:0.3; t.dist=t.rad*2.3;
+    ds.sort((a,b)=>a-b); t.rad=ds.length?ds[Math.floor(0.95*(ds.length-1))]:0.3;
+    t.dist0=t.rad*2.3; t.dist=t.dist0;
+
+    // rotate by dragging; zoom on ctrl/cmd-scroll so plain scrolling still moves the page
+    c.addEventListener("pointerdown",e=>{t.drag={x:e.clientX,y:e.clientY};t.moved=0;
+      try{c.setPointerCapture(e.pointerId);}catch(_){}});
+    c.addEventListener("pointermove",e=>{ if(!t.drag)return;
+      const dx=e.clientX-t.drag.x, dy=e.clientY-t.drag.y;
+      t.moved+=Math.abs(dx)+Math.abs(dy);
+      t.yaw+=dx*0.012; t.pitch=Math.max(-1.4,Math.min(1.4,t.pitch+dy*0.009));
+      t.drag={x:e.clientX,y:e.clientY}; drawTile(t); });
+    c.addEventListener("pointerup",()=>{t.drag=null;});
+    c.addEventListener("pointercancel",()=>{t.drag=null;});
+    c.addEventListener("wheel",e=>{ if(!(e.ctrlKey||e.metaKey))return;   // let the page scroll
+      e.preventDefault();
+      t.dist=Math.max(t.dist0*0.3,Math.min(t.dist0*4,t.dist*(1+Math.sign(e.deltaY)*0.12)));
+      drawTile(t); },{passive:false});
+    // a drag must not also count as "load this recording"
+    cell.addEventListener("click",()=>{ if(t.moved>=4){t.moved=0;return;}
+      loadRec(id); window.scrollTo({top:0,behavior:"smooth"}); });
+
     tiles.push(t); io.observe(c);
+   }catch(err){ console.error("tile "+id+" failed to build:",err); }
   }
   document.getElementById("gridloading").style.display="none";
 }
 const io=new IntersectionObserver(es=>{for(const e of es){const t=tiles.find(q=>q.cv===e.target);
-  if(t){t.vis=e.isIntersecting; if(t.vis&&!t.sized){sizeTile(t);drawTile(t);}}}},{rootMargin:"120px"});
+  if(t){t.vis=e.isIntersecting; if(t.vis){ if(!t.sized)sizeTile(t); drawTile(t); }}}},{rootMargin:"120px"});
 function sizeTile(t){const r=t.cv.getBoundingClientRect(),d=window.devicePixelRatio||1;
   t.cv.width=Math.round(r.width*d);t.cv.height=Math.round(r.height*d);
   t.cx.setTransform(d,0,0,d,0,0);t.w=r.width;t.h=r.height;t.sized=true;}
@@ -403,22 +436,48 @@ function drawTile(t){
   const cx=t.cx; cx.clearRect(0,0,t.w,t.h);
   const pr=(x,y,z)=>{ x-=t.C[0];y-=t.C[1];z-=t.C[2];
     const ca=Math.cos(t.yaw),sa=Math.sin(t.yaw); const X=x*ca-y*sa,Y=x*sa+y*ca;
-    const cb=Math.cos(0.5),sb=Math.sin(0.5); const Y2=Y*cb-z*sb,Z2=Y*sb+z*cb;
+    const cb=Math.cos(t.pitch),sb=Math.sin(t.pitch); const Y2=Y*cb-z*sb,Z2=Y*sb+z*cb;
     const d=t.dist+Y2; if(d<t.rad*0.15)return null;
     const f=t.w*0.9; return [t.w/2+X*f/d, t.h/2-Z2*f/d, d]; };
-  const items=[]; const base=t.f*t.M*3;
-  for(let i=0;i<t.M;i++){const o=base+i*3;
-    if(isFinite(t.cup[o])){const p=pr(t.cup[o],t.cup[o+1],t.cup[o+2]); if(p)items.push([p[2],p[0],p[1],"#c9a476",2.4]);}
-    if(isFinite(t.pla[o])){const p=pr(t.pla[o],t.pla[o+1],t.pla[o+2]); if(p)items.push([p[2],p[0],p[1],"#dddddd",2.4]);}}
-  const ho=t.f*3;
-  if(isFinite(t.hand[ho])){const p=pr(t.hand[ho],t.hand[ho+1],t.hand[ho+2]);
-    if(p)items.push([p[2],p[0],p[1],t.gra[t.f]?"#7ad97a":"#4d7a4d",3.4]);}
+  const items=[];
+  const push=(x,y,z,col,rad)=>{ if(!isFinite(x))return; const p=pr(x,y,z); if(p)items.push([p[2],p[0],p[1],col,rad]); };
+  if(T.legacy){
+    for(let i=0;i<t.lcup.length/3;i++)   push(t.lcup[i*3],t.lcup[i*3+1],t.lcup[i*3+2],"legacy",1.9);
+    for(let i=0;i<t.lplate.length/3;i++) push(t.lplate[i*3],t.lplate[i*3+1],t.lplate[i*3+2],"legacy",1.9);
+  }
+  if(T.trail){
+    cx.beginPath(); let started=false;
+    for(let f=0;f<=t.f;f++){ let sx=0,sy=0,sz=0,n=0;
+      for(let i=0;i<t.M;i++){const o=(f*t.M+i)*3; if(isFinite(t.cup[o])){sx+=t.cup[o];sy+=t.cup[o+1];sz+=t.cup[o+2];n++;}}
+      if(!n)continue; const p=pr(sx/n,sy/n,sz/n); if(!p)continue;
+      if(!started){cx.moveTo(p[0],p[1]);started=true;}else cx.lineTo(p[0],p[1]); }
+    cx.strokeStyle="rgba(201,164,118,.40)";cx.lineWidth=1.2;cx.stroke();
+  }
+  const base=t.f*t.M*3;
+  if(T.cup)   for(let i=0;i<t.M;i++){const o=base+i*3; push(t.cup[o],t.cup[o+1],t.cup[o+2],"cup",2.4);}
+  if(T.plate) for(let i=0;i<t.M;i++){const o=base+i*3; push(t.pla[o],t.pla[o+1],t.pla[o+2],"plate",2.4);}
+  if(HMODE!=="none" && t.hands[HMODE]){
+    const A=t.hands[HMODE], n=t.hn[HMODE], hb=t.f*n*3;
+    const seg=(a,b,st)=>{const p=pr(A[hb+a*3],A[hb+a*3+1],A[hb+a*3+2]),
+                               q=pr(A[hb+b*3],A[hb+b*3+1],A[hb+b*3+2]);
+      if(p&&q){cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(q[0],q[1]);cx.strokeStyle=st;cx.lineWidth=1.3;cx.stroke();}};
+    if(HMODE==="fk"){ seg(0,1,"#e46b6b"); seg(0,2,"#7ad97a"); seg(0,3,"#6da7ec"); }
+    if(HMODE==="smoothed5"){ const g="rgba(122,217,122,.55)"; seg(0,3,g);seg(3,1,g);seg(0,4,g);seg(4,2,g); }
+    const col=(HMODE==="fk")?"fk":"hand", rad=(HMODE==="mps21")?1.9:2.6;
+    for(let i=0;i<n;i++){const o=hb+i*3; push(A[o],A[o+1],A[o+2],col,rad);}
+  }
   items.sort((a,b)=>b[0]-a[0]);
-  for(const[,x,y,c,r] of items){cx.beginPath();cx.arc(x,y,r,0,6.283);cx.fillStyle=c;cx.fill();}
+  for(const[,x,y,c,r] of items){
+    if(c==="legacy"){cx.beginPath();cx.arc(x,y,r,0,6.283);cx.strokeStyle="rgba(212,103,79,.55)";cx.lineWidth=1;cx.stroke();}
+    else {cx.beginPath();cx.arc(x,y,r,0,6.283);cx.fillStyle=TCOL[c];cx.fill();}
+  }
 }
+function redrawTiles(){ for(const t of tiles) if(t.vis) drawTile(t); }
 function tickTiles(dt){
   for(const t of tiles){ if(!t.vis)continue;
-    t.acc+=dt; if(t.acc>90){t.acc=0;t.f=(t.f+1)%t.n; drawTile(t);} }
+    if(T.rot&&!t.drag) t.yaw+=0.004;
+    if(playing){ t.acc+=dt; if(t.acc>90){t.acc=0;t.f=(t.f+1)%t.n;} }
+    if(playing||T.rot) drawTile(t); }
 }
 
 // ---------------------------------------------------------------- blocked-input detector
