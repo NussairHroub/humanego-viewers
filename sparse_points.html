@@ -61,6 +61,11 @@
   .copy{margin-top:10px;width:100%;background:#2e2d29;border:1px solid #4a4944;color:var(--ink);
         border-radius:8px;padding:5px 0;cursor:pointer;font-size:12.5px}
   .copy:hover{background:#3a3934}
+  #prov{display:block;width:100%;height:14px;margin:8px 0 0;border-radius:4px;cursor:pointer}
+  .provkey{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin:5px 0 0;flex-wrap:wrap}
+  .provkey i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px;font-style:normal}
+  .cell .strip{display:block;width:100%;height:4px}
+  .qflag2{display:inline-block;padding:0 7px;border-radius:8px;font-size:10.5px;background:#5a2740;color:#ffc7de}
   .tl{display:flex;align-items:center;gap:12px;margin:14px 0 0}
   .tl input[type=range]{flex:1;accent-color:var(--accent)}
   .tl .fr{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);min-width:150px}
@@ -103,8 +108,9 @@
   <div class="stats">
     <div><b id="stN">—</b>recordings extracted</div>
     <div><b id="stFr">—</b>frames total</div>
-    <div><b id="stC">—</b>mean per-frame contour coverage</div>
-    <div><b id="stT">—</b>median cup travel (legacy: exactly 0)</div>
+    <div><b id="stC">—</b>median cup coverage (plate is 100% in every recording)</div>
+    <div><b id="stT">—</b>median cup path length (legacy: exactly 0)</div>
+    <div><b id="stX">—</b>flagged by coverage or registration</div>
   </div>
   <p id="blockwarn" style="display:none;margin:0 0 14px;padding:10px 13px;border-radius:10px;
      background:#4a2320;border:1px solid #7a3a30;color:#f7c9bd;font-size:13px">
@@ -157,6 +163,14 @@
     <span class="fr" id="grasplabel" style="text-align:right"></span>
   </div>
 
+  <canvas id="prov" title="per-frame provenance — click to seek"></canvas>
+  <p class="provkey">
+    <span><i style="background:#4a9d5f"></i>from this frame's own contour</span>
+    <span><i style="background:#c8a13c"></i>held (mask failed the quality gate)</span>
+    <span><i style="background:#b4503c"></i>static pool</span>
+    <span><i style="background:#2a6b8a"></i>grasp closed</span>
+    <span style="color:#6b6960">upper row cup · lower row plate</span>
+  </p>
   <h2>All recordings</h2>
   <p class="sub" style="margin-bottom:0">Each tile is the same per-frame extraction for one demonstration,
   decimated for the grid. <b>Click one to load it in the viewer above.</b> Every tile is a live view with the same channels as the
@@ -245,8 +259,11 @@ async function loadRec(id, keepView){
   if(!keepView){ dist=DIST0; yaw=-0.6; pitch=0.5; }
   frame=0; sel=null; showSel();
   document.getElementById("scrub").max=d.F-1;
-  document.getElementById("nowview").textContent="recording "+id+" · "+d.F+" frames · "+
-    d.stats.contour_pct.toFixed(1)+"% per-frame contour";
+  {const pv=PRE&&PRE.previews[id];
+   document.getElementById("nowview").textContent="recording "+id+" · "+d.F+" frames · cup "+
+     (pv?pv.cup_pct:d.stats.contour_pct).toFixed(1)+"% on-contour"+
+     (pv&&pv.longest>20?" · longest hold "+pv.longest+" fr":"")+
+     (pv&&pv.reg_bad?" · ⚠ registration "+pv.reg2+" mm":"");}
   document.querySelectorAll(".cell").forEach(c=>c.classList.toggle("on",c.dataset.rec===id));
   setNote(); draw();
 }
@@ -316,6 +333,25 @@ function draw(){
   g.textContent=D.GRA[frame]?"grasp CLOSED":"grasp open";
   g.style.color=D.GRA[frame]?"#7ad97a":"var(--muted)";
   document.getElementById("scrub").value=frame;
+  drawProv();
+}
+// Holds are not scattered noise: measured across 37 recordings they arrive as one long block
+// (up to 166 consecutive frames) and 91% of them fall inside the closed grasp. A percentage
+// destroys that shape, so the strip shows every frame's provenance along the timeline's own axis.
+const SRCCOL=["#4a9d5f","#b4503c","#4a9d5f","#c8a13c","#c8a13c"];
+function drawProv(){
+  const cv2=document.getElementById("prov"); if(!cv2||!D)return;
+  const dpr=devicePixelRatio||1, W=cv2.clientWidth, H=14;
+  if(cv2.width!==Math.round(W*dpr)){cv2.width=Math.round(W*dpr);cv2.height=Math.round(H*dpr);}
+  const g=cv2.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,W,H); g.fillStyle="#141310"; g.fillRect(0,0,W,H);
+  const n=D.F, w=W/n;
+  for(let f=0;f<n;f++){
+    g.fillStyle=SRCCOL[D.SRC[f*2]]||"#666";   g.fillRect(f*w,0,Math.max(w,0.6),6);
+    g.fillStyle=SRCCOL[D.SRC[f*2+1]]||"#666"; g.fillRect(f*w,7,Math.max(w,0.6),5);
+    if(D.GRA[f]){g.fillStyle="rgba(42,107,138,.85)"; g.fillRect(f*w,12,Math.max(w,0.6),2);}
+  }
+  g.fillStyle="#fff"; g.fillRect(Math.min(W-1,frame*w),0,1,H);   // playhead
 }
 function nearest(mx,my){let best=null,bd=18*18;
   for(const p of picks){const dx=p.sx-mx,dy=p.sy-my,d=dx*dx+dy*dy; if(d<bd){bd=d;best=p;}} return best;}
@@ -371,6 +407,11 @@ cv.addEventListener("click",e=>{ if(moved>=4){moved=0;return;}
   sel=hit; showSel(); draw();});
 cv.addEventListener("wheel",e=>{e.preventDefault();
   dist=Math.max(DIST0*0.28,Math.min(DIST0*4,dist*(1+Math.sign(e.deltaY)*0.09)));draw();},{passive:false});
+document.getElementById("prov").addEventListener("click",e=>{ if(!D)return;
+  const r=e.currentTarget.getBoundingClientRect();
+  frame=Math.max(0,Math.min(D.F-1,Math.floor((e.clientX-r.left)/r.width*D.F)));
+  playing=false; document.getElementById("play").textContent="▶ play";
+  sel=null; showSel(); draw();});
 document.getElementById("scrub").addEventListener("input",e=>{frame=+e.target.value;if(sel){sel=null;showSel();}draw();});
 document.getElementById("play").addEventListener("click",e=>{playing=!playing;e.target.textContent=playing?"⏸ pause":"▶ play";});
 document.getElementById("reset").addEventListener("click",()=>{
@@ -413,10 +454,13 @@ function buildGrid(pre){
       '<button data-act="in" title="zoom in">+</button>'+
       '<button data-act="out" title="zoom out">\u2212</button>'+
       '<button data-act="rst" title="reset this tile">\u2302</button></div></div>'+
+      '<canvas class="strip"></canvas>'+
       '<div class="cap"><span><b>'+id+'</b><span class="chip">\u00b7</span>'+
-      (p.flag?'<span class="qflag" title="low per-frame coverage or a large frame-to-frame jump \u2014 review before training">\u26a0 QA</span>':'')+
-      '</span><span title="worst frame-to-frame cup-centroid jump">'+p.F+' fr \u00b7 '+p.contour+
-      '% \u00b7 jump '+p.jump+' mm</span></div>';
+      (p.cov_bad?'<span class="qflag" title="cup coverage below 70% or a frame-to-frame jump over 200 mm">\u26a0 cov</span>':'')+
+      (p.reg_bad?'<span class="qflag2" title="SAM 3D registration error over 25 mm \u2014 flagged on the Dynamic Scenes page">\u26a0 reg</span>':'')+
+      '</span><span title="cup coverage \u00b7 centroid path length \u00b7 longest unbroken hold">'+
+      p.F+' fr \u00b7 cup '+p.cup_pct+'% \u00b7 '+p.path+' m'+
+      (p.longest>20?' \u00b7 hold '+p.longest:'')+'</span></div>';
     g.appendChild(cell);
     const c=cell.querySelector("canvas");
     const n=p.n, M=pre.M, hands={};
@@ -425,7 +469,8 @@ function buildGrid(pre){
       flag:!!p.flag,n,M,vis:false,f:0,acc:0,
       yaw:-0.6,pitch:0.5,C:p.centre,hands,hn:p.hn,
       cup:decF(p.cup,n*M*3), pla:decF(p.plate,n*M*3), gra:decU(p.grasp),
-      lcup:decFAll(p.lcup), lplate:decFAll(p.lplate), drag:null, moved:0};
+      lcup:decFAll(p.lcup), lplate:decFAll(p.lplate), drag:null, moved:0,
+      strip:cell.querySelector(".strip"), fsrc:decU(p.src), fgra:null, FF:p.F};
     const ds=[];
     for(const A of [t.cup,t.pla]) for(let i=0;i<A.length;i+=3){ if(!isFinite(A[i]))continue;
       ds.push(Math.hypot(A[i]-t.C[0],A[i+1]-t.C[1],A[i+2]-t.C[2])); }
@@ -458,6 +503,7 @@ function buildGrid(pre){
       if(e.target.closest&&e.target.closest(".tools"))return;
       loadRec(id); window.scrollTo({top:0,behavior:"smooth"}); });
 
+    paintStrip(t);
     tiles.push(t); io.observe(c);
    }catch(err){ failed++; console.error("tile "+id+" failed to build:",err);
      const c=document.querySelector('.cell[data-rec="'+id+'"]'); if(c)c.remove(); }
@@ -517,6 +563,15 @@ function drawTile(t){
   if(t.chip){const gg=t.gra[t.f]>0.5;
     t.chip.textContent=gg?"GRASP":"open"; t.chip.className="chip"+(gg?" on":"");}
 }
+function paintStrip(t){
+  const cv2=t.strip; if(!cv2)return;
+  const dpr=devicePixelRatio||1, W=t.el.clientWidth||200, H=4;
+  cv2.width=Math.round(W*dpr); cv2.height=Math.round(H*dpr);
+  const g=cv2.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+  g.fillStyle="#141310"; g.fillRect(0,0,W,H);
+  const n=t.FF, w=W/n;
+  for(let f=0;f<n;f++){ g.fillStyle=SRCCOL[t.fsrc[f*2]]||"#666"; g.fillRect(f*w,0,Math.max(w,0.6),H); }
+}
 function redrawTiles(){ for(const t of tiles) if(t.vis) drawTile(t); }
 function tickTiles(dt){
   for(const t of tiles){ if(!t.vis)continue;
@@ -547,12 +602,14 @@ function checkBlocked(){
   buildGrid(PRE);
   const ids=PRE.recs;
   const fr=ids.reduce((a,id)=>a+PRE.previews[id].F,0);
-  const cs=ids.map(id=>PRE.previews[id].contour);
-  const tv=ids.map(id=>PRE.previews[id].travel).sort((a,b)=>a-b);
+  const cs=ids.map(id=>PRE.previews[id].cup_pct).sort((a,b)=>a-b);
+  const tv=ids.map(id=>PRE.previews[id].path).sort((a,b)=>a-b);
   document.getElementById("stN").textContent=ids.length;
   document.getElementById("stFr").textContent=fr.toLocaleString();
-  document.getElementById("stC").textContent=(cs.reduce((a,b)=>a+b,0)/cs.length).toFixed(1)+"%";
-  document.getElementById("stT").textContent=(tv[Math.floor(tv.length/2)]*100).toFixed(0)+" cm";
+  document.getElementById("stC").textContent=cs[Math.floor(cs.length/2)].toFixed(1)+"%";
+  document.getElementById("stT").textContent=tv[Math.floor(tv.length/2)].toFixed(2)+" m";
+  document.getElementById("stX").textContent=
+    ids.filter(id=>PRE.previews[id].cov_bad||PRE.previews[id].reg_bad).length+" / "+ids.length;
   const start=(location.hash||"").replace("#","");
   await loadRec(ids.includes(start)?start:ids[0]);
   requestAnimationFrame(loop);
