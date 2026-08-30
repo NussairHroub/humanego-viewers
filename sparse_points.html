@@ -64,7 +64,9 @@
   .tl{display:flex;align-items:center;gap:12px;margin:14px 0 0}
   .tl input[type=range]{flex:1;accent-color:var(--accent)}
   .tl .fr{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);min-width:150px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:12px;margin-top:14px}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+  @media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
   .cell{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;
         cursor:pointer;transition:border-color .12s,transform .12s}
   .cell:hover{border-color:#6a695f;transform:translateY(-1px)}
@@ -202,7 +204,9 @@ const T={cup:1,plate:1,legacy:1,trail:1,rot:0};
 
 function size(){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;
   cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0);return r;}
-let R=size(); addEventListener("resize",()=>{R=size();draw();});
+let R=size();
+addEventListener("resize",()=>{R=size();draw();
+  for(const t of tiles){t.sized=false; if(t.vis){sizeTile(t);drawTile(t);}}});
 
 // ---------------------------------------------------------------- recording load / swap
 function decode(p){

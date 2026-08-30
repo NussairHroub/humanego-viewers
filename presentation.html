@@ -16,7 +16,9 @@
   .sub a{color:var(--accent)}
   .stats{display:flex;gap:26px;flex-wrap:wrap;margin:16px 0 26px;color:var(--muted);font-size:13.5px}
   .stats b{color:var(--ink);font-size:17px;display:block;font-variant-numeric:tabular-nums}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  @media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
   .cell{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .cvwrap{position:relative}
   .cell canvas{display:block;width:100%;aspect-ratio:1.15;cursor:grab;touch-action:pan-y}
@@ -32,7 +34,8 @@
   #gbar button{background:#2e2d29;border:1px solid #4a4944;color:#e9e7e2;border-radius:8px;
     padding:3px 12px;cursor:pointer;font-size:13px}
   .sw2{display:inline-block;width:9px;height:9px;border-radius:3px}
-  .cap{display:flex;justify-content:space-between;align-items:baseline;padding:9px 13px;font-size:12.5px;color:var(--muted)}
+  .cap{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 11px;font-size:11.5px;color:var(--muted);line-height:1.35}
+  .cap>span{display:flex;align-items:center;gap:5px;white-space:nowrap}
   .cap b{color:var(--ink);font-size:14px}
   .cap .g{display:inline-block;padding:0 7px;border-radius:8px;font-size:10.5px;background:#666;color:#fff;margin-left:7px;vertical-align:1px}
   .cap .g.on{background:#3a5}
@@ -153,7 +156,7 @@ for(const r of RECS){
     '<button data-act="in">+</button><button data-act="out">−</button><button data-act="rst">⌂</button>'+
     '</div></div><div class="cap"><span><b>demo '+r.id+'</b><span class="g">·</span>'+
     (r.flag?'<span class="flag" title="registration outside the 25 mm QA threshold">⚠ reg</span>':'')+
-    '</span><span>'+r.F+' fr · carry '+r.travel.toFixed(2)+' m · reg '+r.qa1+'/'+r.qa2+' mm</span></div>';
+    '</span><span title="registration error, cup / plate">'+r.F+' fr · carry '+r.travel.toFixed(2)+' m</span></div>';
   grid.appendChild(cell);
   const c={r, el:cell, cv:cell.querySelector("canvas"), chip:cell.querySelector(".g"),
            yaw:-0.5, pitch:0.55, dist:0.62, t:0, vis:false, data:null};
