@@ -83,6 +83,12 @@
     <div><b>7.0&nbsp;mm</b>pre-grasp agreement with triangulation</div>
     <div><b>63&nbsp;mm</b>max frame-to-frame jump (was 328)</div>
   </div>
+  <p id="blockwarn" style="display:none;margin:0 0 14px;padding:10px 13px;border-radius:10px;
+     background:#4a2320;border:1px solid #7a3a30;color:#f7c9bd;font-size:13px">
+     <b>Input is being intercepted.</b> Something outside this page — usually a browser extension
+     overlay — is covering it and swallowing clicks, so the toggles and the point inspector will not
+     respond. The page itself is fine: <span id="blockwho"></span>. Close the extension overlay
+     (or open this page in a private window) and reload.</p>
   <div id="gbar">
     <button id="play">⏸ pause</button>
     <label><input type="checkbox" id="Tcup" checked><span class="sw2" style="background:var(--cup)"></span><span>cup</span></label>
@@ -347,9 +353,15 @@ document.getElementById("scrub").addEventListener("input",e=>{frame=+e.target.va
 document.getElementById("play").addEventListener("click",e=>{playing=!playing;e.target.textContent=playing?"⏸ pause":"▶ play";});
 document.getElementById("reset").addEventListener("click",()=>{yaw=-0.6;pitch=0.5;dist=DIST0;draw();});
 addEventListener("keydown",e=>{
+  // the scrub slider owns its own arrow keys; don't step the frame twice
+  const t=e.target;
+  if(t&&t.id==="scrub"&&(e.key==="ArrowLeft"||e.key==="ArrowRight")) return;
   if(e.key===" "){e.preventDefault();playing=!playing;document.getElementById("play").textContent=playing?"⏸ pause":"▶ play";}
   if(e.key==="ArrowRight"){playing=false;document.getElementById("play").textContent="▶ play";frame=(frame+1)%F;draw();}
   if(e.key==="ArrowLeft"){playing=false;document.getElementById("play").textContent="▶ play";frame=(frame-1+F)%F;draw();}});
+// release focus after activating any bar control, so the next keypress reaches the viewer
+document.querySelectorAll('#gbar input,#gbar button').forEach(el=>
+  el.addEventListener("click",()=>setTimeout(()=>el.blur(),0)));
 
 let acc=0,last=performance.now();
 function loop(t){
@@ -360,5 +372,27 @@ function loop(t){
   requestAnimationFrame(loop);
 }
 setNote();draw();showSel();requestAnimationFrame(loop);
+// If a foreign element sits on top of our own controls, every click goes to it and the page looks
+// broken with nothing in the console. Detect it and say so rather than leaving the user guessing.
+function checkBlocked(){
+  const wrap=document.querySelector(".wrap");
+  const probe=[cv,document.getElementById("Tcup"),document.querySelector("#hseg button")];
+  for(const el of probe){
+    if(!el) continue;
+    const r=el.getBoundingClientRect();
+    if(r.width<2||r.bottom<0||r.top>innerHeight) continue;
+    const top=document.elementFromPoint(r.left+r.width/2, r.top+r.height/2);
+    if(top && !wrap.contains(top)){
+      document.getElementById("blockwho").textContent =
+        "the intercepting element is <"+top.tagName.toLowerCase()+"> at z-index "+
+        (getComputedStyle(top).zIndex||"auto");
+      document.getElementById("blockwarn").style.display="";
+      return true;
+    }
+  }
+  document.getElementById("blockwarn").style.display="none";
+  return false;
+}
+setTimeout(checkBlocked,800); addEventListener("focus",()=>setTimeout(checkBlocked,200));
 </script>
 </body></html>
