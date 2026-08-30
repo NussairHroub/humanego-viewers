@@ -168,6 +168,7 @@
 </div>
 <script>
 const DATA_DIR="sp_data";
+const DATA_V="2";   // bump whenever the payload schema changes
 function decF(b,n){const s=atob(b),u=Uint8Array.from(s,c=>c.charCodeAt(0));const v=new DataView(u.buffer);
   const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=v.getFloat32(i*4,true);return a;}
 function decU(b){const s=atob(b);return Uint8Array.from(s,c=>c.charCodeAt(0));}
@@ -222,7 +223,7 @@ function decode(p){
 async function loadRec(id, keepView){
   document.getElementById("nowview").textContent="loading "+id+"…";
   let d=cache.get(id);
-  if(!d){ const r=await fetch(`${DATA_DIR}/${id}.json`);
+  if(!d){ const r=await fetch(`${DATA_DIR}/${id}.json?v=${DATA_V}`);
           if(!r.ok){document.getElementById("nowview").textContent="failed to load "+id;return;}
           d=decode(await r.json()); cache.set(id,d); }
   D=d; RECID=id; RAD=d.RAD; DIST0=RAD*2.2;
@@ -383,9 +384,11 @@ const tiles=[];
 const TCOL={cup:"#c9a476",plate:"#dddddd",hand:"#7ad97a",fk:"#6da7ec"};
 function buildGrid(pre){
   const g=document.getElementById("grid");
+  let failed=0;
   for(const id of pre.recs){
    try{
     const p=pre.previews[id];
+    if(!p || !p.hands || !p.lcup) throw new Error("preview schema is older than this page");
     const cell=document.createElement("div");
     cell.className="cell"; cell.dataset.rec=id;
     cell.innerHTML='<canvas></canvas><div class="cap"><b>'+id+'</b><span>'+p.F+' fr · '+p.contour+'%</span></div>';
@@ -422,9 +425,15 @@ function buildGrid(pre){
       loadRec(id); window.scrollTo({top:0,behavior:"smooth"}); });
 
     tiles.push(t); io.observe(c);
-   }catch(err){ console.error("tile "+id+" failed to build:",err); }
+   }catch(err){ failed++; console.error("tile "+id+" failed to build:",err);
+     const c=document.querySelector('.cell[data-rec="'+id+'"]'); if(c)c.remove(); }
   }
-  document.getElementById("gridloading").style.display="none";
+  const gl=document.getElementById("gridloading");
+  if(failed){ gl.style.display=""; gl.style.color="#f7c9bd";
+    gl.innerHTML="<b>"+failed+" of "+pre.recs.length+" recordings could not be drawn.</b> "+
+      "This usually means a cached copy of the data is older than the page. Hard-reload "+
+      "(\u2318\u21e7R / Ctrl-F5) to clear it."; }
+  else gl.style.display="none";
 }
 const io=new IntersectionObserver(es=>{for(const e of es){const t=tiles.find(q=>q.cv===e.target);
   if(t){t.vis=e.isIntersecting; if(t.vis){ if(!t.sized)sizeTile(t); drawTile(t); }}}},{rootMargin:"120px"});
@@ -497,7 +506,7 @@ function checkBlocked(){
 // ---------------------------------------------------------------- boot
 (async function(){
   setNote();
-  const r=await fetch(`${DATA_DIR}/previews.json`);
+  const r=await fetch(`${DATA_DIR}/previews.json?v=${DATA_V}`);
   PRE=await r.json();
   buildGrid(PRE);
   const ids=PRE.recs;
