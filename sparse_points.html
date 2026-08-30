@@ -122,7 +122,7 @@
           <dt>to hand</dt><dd id="iHand">—</dd>
         </dl>
         <div class="xyz" id="iXYZ"></div>
-        <button class="copy" id="copy">copy xyz</button>
+        <button class="copy" id="copy">copy xyz (cm)</button>
       </div>
     </div>
   </div>
@@ -131,7 +131,7 @@
     <input type="range" id="scrub" min="0" max="0" value="0">
     <span class="fr" id="grasplabel"></span>
   </div>
-  <p class="foot">Coordinates are metres in the recording's <b>MPS closed-loop world frame</b> — the same
+  <p class="foot">Coordinates are centimetres in the recording's <b>MPS closed-loop world frame</b> — the same
   frame the policy's reference transform is built from. Object points are the 20 equidistant inner-contour
   samples of that frame's mask (the identical sampler that produced the original keypoints), lifted through
   a per-frame metric depth scale. They are <b>re-sampled independently every frame</b>, so a given index is
@@ -310,15 +310,16 @@ function showSel(){
   const fb=sf*4*3, hx=FK[fb],hy=FK[fb+1],hz=FK[fb+2];
   const dh=isFinite(hx)?Math.hypot(sel.wx-hx,sel.wy-hy,sel.wz-hz):NaN;
   document.getElementById("iHand").textContent=isFinite(dh)?(dh*1000).toFixed(1)+" mm":"—";
+  const cm=v=>(v*100).toFixed(2);
   document.getElementById("iXYZ").innerHTML=
-    '<span class="ax">x</span>'+sel.wx.toFixed(4)+' <span class="u">m</span><br>'+
-    '<span class="ax">y</span>'+sel.wy.toFixed(4)+' <span class="u">m</span><br>'+
-    '<span class="ax">z</span>'+sel.wz.toFixed(4)+' <span class="u">m</span>';
+    '<span class="ax">x</span>'+cm(sel.wx)+' <span class="u">cm</span><br>'+
+    '<span class="ax">y</span>'+cm(sel.wy)+' <span class="u">cm</span><br>'+
+    '<span class="ax">z</span>'+cm(sel.wz)+' <span class="u">cm</span>';
 }
 document.getElementById("copy").addEventListener("click",e=>{
   if(!sel)return;
-  navigator.clipboard.writeText(sel.wx.toFixed(6)+", "+sel.wy.toFixed(6)+", "+sel.wz.toFixed(6));
-  e.target.textContent="copied ✓";setTimeout(()=>e.target.textContent="copy xyz",1200);});
+  navigator.clipboard.writeText([sel.wx,sel.wy,sel.wz].map(v=>(v*100).toFixed(2)).join(", "));
+  e.target.textContent="copied ✓";setTimeout(()=>e.target.textContent="copy xyz (cm)",1200);});
 
 let drag=null, moved=0;
 cv.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY};moved=0;
