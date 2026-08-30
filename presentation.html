@@ -38,6 +38,33 @@
   .cap .g.on{background:#3a5}
   .cap .flag{display:inline-block;padding:0 7px;border-radius:8px;font-size:10.5px;
     background:#7a4a1e;color:#ffd9b0;margin-left:6px;vertical-align:1px}
+  h2{font-size:19px;margin:34px 0 4px;letter-spacing:-.01em}
+  .stage{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;margin:0 0 8px}
+  @media(max-width:900px){.stage{grid-template-columns:1fr}}
+  .fcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+  #fcv{display:block;width:100%;aspect-ratio:1.35;cursor:crosshair;touch-action:none;background:#12110d}
+  .fnow{position:absolute;left:12px;top:10px;font-size:12px;color:var(--ink);pointer-events:none;
+        background:rgba(18,17,13,.72);padding:3px 9px;border-radius:7px}
+  .fhint{position:absolute;left:12px;bottom:10px;font-size:11.5px;color:var(--muted);pointer-events:none;
+        background:rgba(18,17,13,.7);padding:3px 8px;border-radius:7px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+  .panel h3{margin:0 0 10px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .empty{color:var(--muted);font-size:13px;margin:0}
+  .kv{display:grid;grid-template-columns:62px 1fr;gap:5px 10px;font-size:13px;align-items:baseline}
+  .kv dt{color:var(--muted)} .kv dd{margin:0;font-variant-numeric:tabular-nums}
+  .xyz{margin:12px 0 0;padding:11px 12px;background:#141310;border:1px solid var(--line);border-radius:10px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;
+       font-variant-numeric:tabular-nums;line-height:1.7}
+  .xyz .ax{color:var(--muted);display:inline-block;width:15px}
+  .xyz .u{color:var(--muted);font-size:11.5px}
+  .copy{margin-top:10px;width:100%;background:#2e2d29;border:1px solid #4a4944;color:var(--ink);
+        border-radius:8px;padding:5px 0;cursor:pointer;font-size:12.5px}
+  .copy:hover{background:#3a3934}
+  .tl{display:flex;align-items:center;gap:12px;margin:12px 0 0}
+  .tl input[type=range]{flex:1;accent-color:var(--accent)}
+  .tl .fr{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);min-width:150px}
+  .cell{cursor:pointer}
+  .cell.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
   .foot{color:var(--muted);font-size:12.5px;margin-top:34px;border-top:1px solid var(--line);padding-top:14px;max-width:880px}
   .foot a{color:var(--accent)}
 </style></head><body>
@@ -71,6 +98,36 @@
     <button id="Greset">reset views</button>
     <span style="color:var(--muted);font-size:12px">per tile: drag rotate · ⌘/ctrl-scroll or ⊕⊖ zoom · pinch on touch</span>
   </div>
+  <div class="stage">
+    <div class="fcard">
+      <canvas id="fcv"></canvas>
+      <div class="fnow" id="fnow">loading…</div>
+      <div class="fhint">drag rotate · scroll zoom · click a point to inspect · space = play/pause · ←/→ step</div>
+    </div>
+    <div class="panel">
+      <h3>Point inspector</h3>
+      <p class="empty" id="fempty">Click any point in the view above to read its coordinates.</p>
+      <div id="finfo" style="display:none">
+        <dl class="kv">
+          <dt>entity</dt><dd id="fEnt">—</dd>
+          <dt>point</dt><dd id="fIdx">—</dd>
+          <dt>frame</dt><dd id="fFrm">—</dd>
+          <dt>to hand</dt><dd id="fHand">—</dd>
+        </dl>
+        <div class="xyz" id="fXYZ"></div>
+        <button class="copy" id="fcopy">copy xyz (cm)</button>
+      </div>
+    </div>
+  </div>
+  <div class="tl">
+    <span class="fr" id="ffr">frame — / —</span>
+    <input type="range" id="fscrub" min="0" max="0" value="0">
+    <span class="fr" id="fgrasp" style="text-align:right"></span>
+  </div>
+  <h2>All demonstrations</h2>
+  <p class="sub" style="margin-bottom:0">Every tile is a live reconstruction and obeys the controls
+  above. <b>Click one to feature it in the viewer at the top</b>, where you can click individual points
+  to read their world coordinates. Drag a tile to rotate it; ⊕⊖⌂ zoom and reset it.</p>
   <div class="grid" id="grid"></div>
   <p class="foot">Colors are the SAM 3D mesh textures; grey points are the fused static scene
   (cross-view voxel median of per-frame monodepth, object footprints carved). The cup's motion is the
@@ -89,6 +146,7 @@ document.getElementById("stQ").textContent="7.0 / 8.6 mm";
  document.getElementById("stF").textContent=nf+" / "+RECS.length;}
 const grid=document.getElementById("grid");
 const cells=[];
+let FSEL=null;          // point selected in the featured viewer
 for(const r of RECS){
   const cell=document.createElement("div");cell.className="cell";
   cell.innerHTML='<div class="cvwrap"><canvas></canvas><div class="tools">'+
@@ -134,27 +192,40 @@ function draw(c){
     const X=cy*x+sy*y,Y=-sy*x+cy*y,Z=cp*z-sp*X,Xd=sp*z+cp*X;
     return [W/2+f*Y,H/2+8-f*Z,Xd];};
   const items=[];
-  if(G.bg)for(let i=0;i<r.nBg;i++){const p=vw(d.bg[3*i],d.bg[3*i+1],d.bg[3*i+2]);items.push([p[2],p[0],p[1],-1,i]);}
+  if(c.isMain)c.picks=[];
+  if(G.bg)for(let i=0;i<r.nBg;i++){const wx=d.bg[3*i],wy=d.bg[3*i+1],wz=d.bg[3*i+2];
+    const p=vw(wx,wy,wz);items.push([p[2],p[0],p[1],-1,i,wx,wy,wz]);}
   const Tp=d.Tp;
   if(G.plate)for(let i=0;i<r.n2;i++){const x=d.m2[3*i],y=d.m2[3*i+1],z=d.m2[3*i+2];
-    const p=vw(Tp[0]*x+Tp[1]*y+Tp[2]*z+Tp[3],Tp[4]*x+Tp[5]*y+Tp[6]*z+Tp[7],Tp[8]*x+Tp[9]*y+Tp[10]*z+Tp[11]);
-    items.push([p[2],p[0],p[1],2,i]);}
+    const wx=Tp[0]*x+Tp[1]*y+Tp[2]*z+Tp[3],wy=Tp[4]*x+Tp[5]*y+Tp[6]*z+Tp[7],wz=Tp[8]*x+Tp[9]*y+Tp[10]*z+Tp[11];
+    const p=vw(wx,wy,wz); items.push([p[2],p[0],p[1],2,i,wx,wy,wz]);}
   const Ta=d.Ta.subarray(16*c.t,16*c.t+16);
   if(G.cup)for(let i=0;i<r.n1;i++){const x=d.m1[3*i],y=d.m1[3*i+1],z=d.m1[3*i+2];
-    const p=vw(Ta[0]*x+Ta[1]*y+Ta[2]*z+Ta[3],Ta[4]*x+Ta[5]*y+Ta[6]*z+Ta[7],Ta[8]*x+Ta[9]*y+Ta[10]*z+Ta[11]);
-    items.push([p[2],p[0],p[1],1,i]);}
+    const wx=Ta[0]*x+Ta[1]*y+Ta[2]*z+Ta[3],wy=Ta[4]*x+Ta[5]*y+Ta[6]*z+Ta[7],wz=Ta[8]*x+Ta[9]*y+Ta[10]*z+Ta[11];
+    const p=vw(wx,wy,wz); items.push([p[2],p[0],p[1],1,i,wx,wy,wz]);}
   const g=r.grasp[c.t]>0.5;
   if(G.hand)for(let i=0;i<21;i++){const x=d.hx[63*c.t+3*i];if(x>1e8)continue;
-    const p=vw(x,d.hx[63*c.t+3*i+1],d.hx[63*c.t+3*i+2]);items.push([p[2],p[0],p[1],3,0]);}
+    const y=d.hx[63*c.t+3*i+1],z=d.hx[63*c.t+3*i+2];
+    const p=vw(x,y,z);items.push([p[2],p[0],p[1],3,i,x,y,z]);}
   items.sort((a,b)=>a[0]-b[0]);
-  for(const [,x,y,k,i] of items){
-    if(k===-1){ctx.fillStyle="rgba(140,138,130,0.5)";ctx.fillRect(x-0.9,y-0.9,1.8,1.8);}
-    else if(k===2){ctx.fillStyle=`rgb(${d.c2[3*i]},${d.c2[3*i+1]},${d.c2[3*i+2]})`;ctx.fillRect(x-1.2,y-1.2,2.4,2.4);}
-    else if(k===1){ctx.fillStyle=`rgb(${d.c1[3*i]},${d.c1[3*i+1]},${d.c1[3*i+2]})`;ctx.fillRect(x-1.3,y-1.3,2.6,2.6);}
-    else{ctx.fillStyle=g?"#2ecc71":"#7ad97a";ctx.beginPath();ctx.arc(x,y,2.8,0,6.2832);ctx.fill();}
+  const S=c.isMain?1.7:1;      // the featured canvas is much larger, so its marks scale up
+  for(const [,x,y,k,i,wx,wy,wz] of items){
+    if(k===-1){ctx.fillStyle="rgba(140,138,130,0.5)";ctx.fillRect(x-0.9*S,y-0.9*S,1.8*S,1.8*S);}
+    else if(k===2){ctx.fillStyle=`rgb(${d.c2[3*i]},${d.c2[3*i+1]},${d.c2[3*i+2]})`;ctx.fillRect(x-1.2*S,y-1.2*S,2.4*S,2.4*S);}
+    else if(k===1){ctx.fillStyle=`rgb(${d.c1[3*i]},${d.c1[3*i+1]},${d.c1[3*i+2]})`;ctx.fillRect(x-1.3*S,y-1.3*S,2.6*S,2.6*S);}
+    else{ctx.fillStyle=g?"#2ecc71":"#7ad97a";ctx.beginPath();ctx.arc(x,y,2.8*S,0,6.2832);ctx.fill();}
+    if(c.isMain)c.picks.push({sx:x,sy:y,k,i,wx,wy,wz});
   }
-  c.chip.textContent=g?"GRASP":"open";
-  c.chip.className="g"+(g?" on":"");
+  if(c.isMain){
+    if(FSEL){const p=vw(FSEL.wx,FSEL.wy,FSEL.wz);
+      ctx.beginPath();ctx.arc(p[0],p[1],9,0,6.2832);ctx.strokeStyle="#fff";ctx.lineWidth=1.8;ctx.stroke();
+      ctx.beginPath();ctx.arc(p[0],p[1],13,0,6.2832);ctx.strokeStyle="rgba(255,255,255,.32)";ctx.lineWidth=1;ctx.stroke();}
+    document.getElementById("ffr").textContent="frame "+(c.t+1)+" / "+r.S;
+    const gl=document.getElementById("fgrasp");
+    gl.textContent=g?"grasp CLOSED":"grasp open"; gl.style.color=g?"#7ad97a":"var(--muted)";
+    document.getElementById("fscrub").value=c.t;
+  }
+  if(c.chip){c.chip.textContent=g?"GRASP":"open"; c.chip.className="g"+(g?" on":"");}
 }
 const io=new IntersectionObserver(es=>{for(const e of es){const c=cells.find(q=>q.cv===e.target);if(c)c.vis=e.isIntersecting;}},{rootMargin:"80px"});
 cells.forEach(c=>io.observe(c.cv));
@@ -162,7 +233,11 @@ function step(){
   for(const c of cells)if(c.vis){load(c);
     if(G.play)c.t=(c.t+1)%c.r.S;
     if(G.rot&&!c.drag)c.yaw+=0.004;
-    if(G.play||G.rot||!c.painted){c.painted=true;draw(c);}}}
+    if(G.play||G.rot||!c.painted){c.painted=true;draw(c);}}
+  if(MAIN&&MAIN.r){ load(MAIN);
+    if(G.play)MAIN.t=(MAIN.t+1)%MAIN.r.S;
+    if(G.rot&&!MAIN.drag)MAIN.yaw+=0.004;
+    if(G.play||G.rot||!MAIN.painted){MAIN.painted=true;draw(MAIN);} }}
 let lastStep=0;
 function tick(ts){if(ts-lastStep>80){lastStep=ts;step();}requestAnimationFrame(tick);}
 requestAnimationFrame(tick);
@@ -209,4 +284,100 @@ addEventListener("click",e=>{
       else{const b=l.querySelector("input");b.checked=!b.checked;b.dispatchEvent(new Event("change"));}
       break;}
   }},true);
+
+// ================================================================= featured viewer
+// Reuses the tiles' own load()/draw() against the data already in memory, so featuring a
+// recording costs nothing beyond a redraw. draw() records screen+world positions for this
+// canvas only (c.isMain), which is what makes individual points inspectable.
+const MAIN={r:null,cv:document.getElementById("fcv"),isMain:true,
+            yaw:-0.5,pitch:0.55,dist:0.62,t:0,data:null,picks:[],drag:false};
+const KNAME={"-1":"fused scene point",1:"cup (SAM 3D surface)",2:"plate (SAM 3D surface)",3:"hand landmark"};
+const MPS_NAMED={0:"thumb tip",1:"index tip",6:"thumb MCP",8:"index MCP"};
+
+function featureRec(id){
+  const r=RECS.find(x=>x.id===id); if(!r)return;
+  MAIN.r=r; MAIN.data=null; MAIN.t=0; MAIN.painted=false; FSEL=null; showFSel();
+  load(MAIN);
+  document.getElementById("fscrub").max=r.S-1;
+  document.getElementById("fnow").textContent="demo "+r.id+" · "+r.F+" frames · carry "+
+    r.travel.toFixed(2)+" m · reg "+r.qa1+"/"+r.qa2+" mm"+(r.flag?" · ⚠ registration":"");
+  cells.forEach(c=>c.el.classList.toggle("on",c.r.id===id));
+  draw(MAIN);
+}
+function fnearest(mx,my){let best=null,bd=16*16;
+  for(const p of MAIN.picks){const dx=p.sx-mx,dy=p.sy-my,d=dx*dx+dy*dy;if(d<bd){bd=d;best=p;}}return best;}
+function showFSel(){
+  const emp=document.getElementById("fempty"), inf=document.getElementById("finfo");
+  if(!FSEL){emp.style.display="";inf.style.display="none";return;}
+  emp.style.display="none";inf.style.display="";
+  let name=KNAME[FSEL.k]||"point";
+  if(FSEL.k===3) name+=MPS_NAMED[FSEL.i]?(" · "+MPS_NAMED[FSEL.i]):"";
+  document.getElementById("fEnt").textContent=name;
+  document.getElementById("fIdx").textContent="#"+FSEL.i;
+  document.getElementById("fFrm").textContent=(FSEL.t+1)+" / "+MAIN.r.S;
+  // distance to the hand: centroid of this frame's valid MPS landmarks
+  const d=MAIN.data,t=FSEL.t; let hx=0,hy=0,hz=0,n=0;
+  for(let i=0;i<21;i++){const x=d.hx[63*t+3*i]; if(x>1e8)continue;
+    hx+=x;hy+=d.hx[63*t+3*i+1];hz+=d.hx[63*t+3*i+2];n++;}
+  document.getElementById("fHand").textContent = n
+    ? (Math.hypot(FSEL.wx-hx/n,FSEL.wy-hy/n,FSEL.wz-hz/n)*1000).toFixed(1)+" mm" : "—";
+  const cm=v=>(v*100).toFixed(2);
+  document.getElementById("fXYZ").innerHTML=
+    '<span class="ax">x</span>'+cm(FSEL.wx)+' <span class="u">cm</span><br>'+
+    '<span class="ax">y</span>'+cm(FSEL.wy)+' <span class="u">cm</span><br>'+
+    '<span class="ax">z</span>'+cm(FSEL.wz)+' <span class="u">cm</span>';
+}
+document.getElementById("fcopy").addEventListener("click",e=>{ if(!FSEL)return;
+  navigator.clipboard.writeText([FSEL.wx,FSEL.wy,FSEL.wz].map(v=>(v*100).toFixed(2)).join(", "));
+  e.target.textContent="copied ✓";setTimeout(()=>e.target.textContent="copy xyz (cm)",1200);});
+
+// featured-canvas input. cellAt() only scans the grid, so these never fight the tile drag handler.
+let fdrag=null,fmoved=0;
+MAIN.cv.addEventListener("pointerdown",e=>{fdrag={x:e.clientX,y:e.clientY};fmoved=0;MAIN.drag=true;
+  try{MAIN.cv.setPointerCapture(e.pointerId);}catch(_){}});
+MAIN.cv.addEventListener("pointermove",e=>{ if(!fdrag)return;
+  const dx=e.clientX-fdrag.x,dy=e.clientY-fdrag.y; fmoved+=Math.abs(dx)+Math.abs(dy);
+  MAIN.yaw+=dx*0.008; MAIN.pitch=Math.max(-1.5,Math.min(1.5,MAIN.pitch+dy*0.008));
+  fdrag={x:e.clientX,y:e.clientY}; draw(MAIN);});
+MAIN.cv.addEventListener("pointerup",()=>{fdrag=null;MAIN.drag=false;});
+MAIN.cv.addEventListener("pointercancel",()=>{fdrag=null;MAIN.drag=false;});
+MAIN.cv.addEventListener("click",e=>{ if(fmoved>=4){fmoved=0;return;}
+  if(!MAIN.r)return;
+  const r=MAIN.cv.getBoundingClientRect(); const hit=fnearest(e.clientX-r.left,e.clientY-r.top);
+  if(hit){hit.t=MAIN.t; G.play=false; document.getElementById("Gplay").textContent="▶ play all";}
+  FSEL=hit; showFSel(); draw(MAIN);});
+MAIN.cv.addEventListener("wheel",e=>{e.preventDefault();
+  MAIN.dist=Math.max(0.18,Math.min(2.5,MAIN.dist*(1+Math.sign(e.deltaY)*0.09)));draw(MAIN);},{passive:false});
+document.getElementById("fscrub").addEventListener("input",e=>{
+  if(!MAIN.r)return; MAIN.t=+e.target.value; G.play=false;
+  document.getElementById("Gplay").textContent="▶ play all"; FSEL=null; showFSel(); draw(MAIN);});
+addEventListener("keydown",e=>{ if(!MAIN.r)return; const t=e.target;
+  if(t&&t.id==="fscrub"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
+  if(e.key===" "){e.preventDefault();G.play=!G.play;
+    document.getElementById("Gplay").textContent=G.play?"⏸ pause all":"▶ play all";}
+  if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
+    G.play=false;document.getElementById("Gplay").textContent="▶ play all";
+    MAIN.t=(MAIN.t+(e.key==="ArrowRight"?1:MAIN.r.S-1))%MAIN.r.S; draw(MAIN);}});
+document.querySelectorAll('#gbar input,#gbar button').forEach(el=>
+  el.addEventListener("click",()=>setTimeout(()=>el.blur(),0)));
+
+// click a tile to feature it — suppressed when the click was really the end of a drag
+let movedPx=0;
+addEventListener("pointerdown",()=>{movedPx=0;},true);
+addEventListener("pointermove",e=>{ if(e.buttons&1)
+  movedPx+=Math.abs(e.movementX||0)+Math.abs(e.movementY||0);},true);
+cells.forEach(c=>c.el.addEventListener("click",e=>{
+  if(movedPx>=5)return;
+  if(e.target.closest&&e.target.closest(".tools"))return;   // the ⊕⊖⌂ buttons are not a selection
+  featureRec(c.r.id); window.scrollTo({top:0,behavior:"smooth"});}));
+
+// the global toggles already redraw every tile; keep the featured canvas in step
+for(const k of ["cup","plate","hand","bg"])
+  document.getElementById("G"+k).addEventListener("change",()=>{if(MAIN.r)draw(MAIN);});
+document.getElementById("Greset").addEventListener("click",()=>{
+  MAIN.yaw=-0.5;MAIN.pitch=0.55;MAIN.dist=0.62;if(MAIN.r)draw(MAIN);});
+
+{ const want=(location.hash||"").replace("#","");
+  featureRec(RECS.some(r=>r.id===want)?want:RECS[0].id); }
+
 </script></body></html>
