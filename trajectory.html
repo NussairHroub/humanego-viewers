@@ -369,10 +369,14 @@ document.querySelectorAll("#cseg button").forEach(b=>b.addEventListener("click",
 let drag=null,moved=0;
 cv.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY};moved=0;try{cv.setPointerCapture(e.pointerId);}catch(_){}});
 cv.addEventListener("pointermove",e=>{const r=cv.getBoundingClientRect();
+  if(drag&&!(e.buttons&1))drag=null;          // released off-canvas: stop rotating
   if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;moved+=Math.abs(dx)+Math.abs(dy);
     yaw+=dx*0.008;pitch=Math.max(-1.4,Math.min(1.4,pitch+dy*0.006));drag={x:e.clientX,y:e.clientY};draw();return;}
   const h=nearest(e.clientX-r.left,e.clientY-r.top); if(h!==hover){hover=h;cv.style.cursor=h?"pointer":"crosshair";draw();}});
 cv.addEventListener("pointerup",()=>{drag=null;});
+addEventListener("pointerup",()=>{drag=null;},true);
+addEventListener("pointercancel",()=>{drag=null;},true);
+addEventListener("blur",()=>{drag=null;});
 cv.addEventListener("click",e=>{ if(moved>=4){moved=0;return;}
   const r=cv.getBoundingClientRect(); const hit=nearest(e.clientX-r.left,e.clientY-r.top);
   if(hit){playing=false;document.getElementById("play").textContent="▶ play";}
@@ -418,7 +422,8 @@ function buildGrid(){
       drawTile(t);});
     c.addEventListener("pointerdown",e=>{t.drag={x:e.clientX,y:e.clientY};t.moved=0;
       try{c.setPointerCapture(e.pointerId);}catch(_){}});
-    c.addEventListener("pointermove",e=>{ if(!t.drag)return;
+    c.addEventListener("pointermove",e=>{ if(t.drag&&!(e.buttons&1))t.drag=null;
+      if(!t.drag)return;
       const dx=e.clientX-t.drag.x,dy=e.clientY-t.drag.y; t.moved+=Math.abs(dx)+Math.abs(dy);
       t.yaw+=dx*0.012;t.pitch=Math.max(-1.4,Math.min(1.4,t.pitch+dy*0.009));
       t.drag={x:e.clientX,y:e.clientY};drawTile(t);});
