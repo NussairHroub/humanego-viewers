@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grounding DINO Detections</title>
+<style>
+  :root{--bg:#12110d;--card:#1c1b17;--ink:#e9e7e2;--muted:#a09d95;--line:#3a3934;--accent:#6da7ec;
+        --obj1:#c9a476;--obj2:#dddddd;--arm:#e46b6b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1280px;margin:0 auto;padding:40px 22px 80px}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:19px;margin:34px 0 4px;letter-spacing:-.01em}
+  .nav{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 14px}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:4px 11px;border:1px solid var(--line);border-radius:16px}
+  .nav a.on{color:var(--ink);border-color:#5a594f;background:var(--card)}
+  .sub{color:var(--muted);font-size:15px;max-width:900px;margin:0 0 10px}
+  .sub a{color:var(--accent)} .sub code{color:var(--ink)}
+  .stats{display:flex;gap:26px;flex-wrap:wrap;margin:16px 0 22px;color:var(--muted);font-size:13.5px}
+  .stats b{color:var(--ink);font-size:17px;display:block;font-variant-numeric:tabular-nums}
+  #gbar{position:sticky;top:0;z-index:50;background:rgba(18,17,13,.94);backdrop-filter:blur(4px);
+    border-bottom:1px solid var(--line);margin:0 -22px 18px;padding:9px 22px;display:flex;gap:16px;
+    flex-wrap:wrap;align-items:center;font-size:13px}
+  #gbar label{display:flex;gap:6px;align-items:center;cursor:pointer;user-select:none;color:var(--muted)}
+  #gbar label input:checked+span,#gbar label input:checked+span+span{color:var(--ink)}
+  #gbar button{background:#2e2d29;border:1px solid #4a4944;color:#e9e7e2;border-radius:8px;
+    padding:3px 12px;cursor:pointer;font-size:13px}
+  #gbar button:hover{background:#3a3934}
+  #gbar input[type=range]{width:110px;accent-color:var(--accent)}
+  .sw2{display:inline-block;width:9px;height:9px;border-radius:3px}
+  .stage{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+  @media(max-width:900px){.stage{grid-template-columns:1fr}}
+  .cvcard{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+  #cv{display:block;width:100%;cursor:crosshair}
+  .nowview{position:absolute;left:12px;top:10px;font-size:12px;color:var(--ink);pointer-events:none;
+        background:rgba(18,17,13,.72);padding:3px 9px;border-radius:7px}
+  .hint{position:absolute;left:12px;bottom:10px;font-size:11.5px;color:var(--muted);pointer-events:none;
+        background:rgba(18,17,13,.7);padding:3px 8px;border-radius:7px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+  .panel h3{margin:0 0 10px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .empty{color:var(--muted);font-size:13px;margin:0}
+  .kv{display:grid;grid-template-columns:62px 1fr;gap:5px 10px;font-size:13px;align-items:baseline}
+  .kv dt{color:var(--muted)} .kv dd{margin:0;font-variant-numeric:tabular-nums}
+  .mono{margin:12px 0 0;padding:10px 11px;background:#141310;border:1px solid var(--line);border-radius:10px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.6}
+  .warn{margin:10px 0 0;padding:9px 11px;border-radius:9px;background:#4a3c1a;color:#f0d79a;font-size:12.5px}
+  .tl{display:flex;align-items:center;gap:12px;margin:14px 0 0}
+  .tl input[type=range]{flex:1;accent-color:var(--accent)}
+  .tl .fr{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);min-width:170px}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+  @media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+        cursor:pointer;transition:border-color .12s,transform .12s}
+  .cell:hover{border-color:#6a695f;transform:translateY(-1px)}
+  .cell.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .cell canvas{display:block;width:100%;background:#141310}
+  .cap{display:flex;flex-direction:column;gap:1px;padding:7px 10px;font-size:11.5px;color:var(--muted);line-height:1.35}
+  .cap>span{display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .cap b{color:var(--ink);font-size:13px;font-variant-numeric:tabular-nums}
+  .qflag{display:inline-block;padding:0 7px;border-radius:8px;font-size:10.5px;background:#7a4a1e;color:#ffd9b0}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:34px;border-top:1px solid var(--line);padding-top:14px;max-width:900px}
+  .foot a{color:var(--accent)} .foot b{color:var(--ink)} .foot code{color:var(--ink)}
+  .loading{color:var(--muted);font-size:13px;padding:10px 0}
+</style></head><body>
+<div class="wrap">
+  <h1>Grounding DINO — what the text prompt matched</h1>
+  <nav class="nav"><a href="presentation.html">Dynamic Scenes</a><a href="sparse_points.html">Sparse Points</a><a href="trajectory.html">Camera Trajectory</a><a href="dino.html" class="on">DINO Boxes</a><a href="sam.html">SAM Masks</a><a href="collected_demos.html">Collected Demos</a><a href="hand_tracking.html">Hand Tracking</a><a href="preprocessing.html">Preprocessing</a><a href="rollout_gallery.html">Robot Rollouts</a><a href="object_orientations.html">Object Orientations</a><a href="index.html">All Viewers</a></nav>
+  <p class="sub">The first stage of segmentation: each object is found by a <b>free-text prompt</b> passed to
+   <b>Grounding DINO</b>, which returns boxes above a 0.30 score. Nothing downstream checks that a prompt
+   matched exactly one thing. These boxes are <b>not saved by the pipeline</b> — it keeps only the final
+   masks — so they were recaptured by re-running the model on sampled frames with each recording's own
+   compiled config. <b>Click a box</b> for its prompt and score. Watch for frames where
+   <code>"a cup ."</code> returns more than one box: every one of them is merged into the same
+   <code>mask_obj1.png</code>. See what that produces on the <a href="sam.html">SAM Masks</a> page.</p>
+  <div class="stats">
+    <div><b id="stN">—</b>recordings sampled</div>
+    <div><b id="stF">—</b>frames re-run through the models</div>
+    <div><b id="stB">—</b>boxes from the cup prompt (8 frames each)</div>
+    <div><b id="stM">—</b>frames where an object prompt returned more than one box</div>
+  </div>
+  <div id="gbar">
+    <span style="color:var(--muted);font-size:12.5px">prompts:</span>
+    <label><input type="checkbox" id="Pobj1" checked><span class="sw2" style="background:var(--obj1)"></span><span>obj1 "a cup ."</span></label>
+    <label><input type="checkbox" id="Pobj2" checked><span class="sw2" style="background:var(--obj2)"></span><span>obj2 "a plate ."</span></label>
+    <label><input type="checkbox" id="Parm"><span class="sw2" style="background:var(--arm)"></span><span>arm</span></label>
+    
+    <label><input type="checkbox" id="Plabels" checked><span>labels</span></label>
+    <label style="gap:8px">conf ≥ <input type="range" id="Pconf" min="30" max="90" value="30"><span id="confv" style="min-width:30px;color:var(--ink)">0.30</span></label>
+    <button id="reset" title="restore every control and go back to the first sampled frame">reset all</button>
+  </div>
+  <div class="stage">
+    <div class="cvcard">
+      <canvas id="cv"></canvas>
+      <div class="nowview" id="nowview">loading…</div>
+      <div class="hint">click a box to inspect · ←/→ step frames</div>
+    </div>
+    <div class="panel">
+      <h3>Detection</h3>
+      <p class="empty" id="empty">Click a box in the view to inspect it.</p>
+      <div id="info" style="display:none">
+        <dl class="kv">
+          <dt>prompt</dt><dd id="iKey">—</dd>
+          <dt>score</dt><dd id="iConf">—</dd>
+          <dt>box px</dt><dd id="iBox">—</dd>
+          <dt>size</dt><dd id="iSize">—</dd>
+        </dl>
+        <div class="mono" id="iText"></div>
+        <div class="warn" id="iWarn" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+  <div class="tl">
+    <span class="fr" id="frlabel">frame — / —</span>
+    <input type="range" id="scrub" min="0" max="0" value="0">
+    <span class="fr" id="detlabel" style="text-align:right"></span>
+  </div>
+  <h2>All recordings</h2>
+  <p class="sub" style="margin-bottom:0">One sampled frame per recording, with the same overlays.
+  <b>Click a tile to load that recording above.</b> A tile is badged when any sampled frame had an
+  object prompt return more than one box.</p>
+  <div class="loading" id="gridloading">loading…</div>
+  <div class="grid" id="grid"></div>
+  <p class="foot">Boxes come from <code>IDEA-Research/grounding-dino-tiny</code> at <code>box_threshold 0.3</code>,
+   re-run on 8 frames per recording using the compiled <code>preprocess/cfg/DINOSAM.yaml</code> each
+   recording was actually built with. Coordinates are pixels in the displayed (downscaled) frame; the
+   source frames are 1280×1920. The prompts are the task file's own:
+   <code>obj1 "a cup ."</code>, <code>obj2 "a plate ."</code>, <code>arm "human arms . human hands ."</code>.
+   Each must end in a space and a period — that is Grounding DINO's phrase separator. There is no negative
+   prompting and no mutual exclusion between obj1 and obj2, which is why one prompt can claim the other's
+   object. See also <a href="sam.html">SAM Masks</a> · <a href="sparse_points.html">Sparse Points</a>.</p>
+</div>
+<script>
+const MODE="dino";                       // "dino" or "sam"
+const DIR="dinosam_data", DATA_V="1";
+const COL={obj1:"#c9a476",obj2:"#dddddd",arm:"#e46b6b"};
+let IDX=null, D=null, RECID=null, frame=0, sel=null, hover=null;
+const P={obj1:1,obj2:1,arm:0,labels:1,conf:0.30,union:0};
+const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
+const imgCache=new Map();
+function getImg(name){ if(imgCache.has(name))return imgCache.get(name);
+  const im=new Image(); im.src=`${DIR}/img/${name}`; imgCache.set(name,im); return im; }
+function visible(d){ return P[d.key] && d.conf>=P.conf; }
+
+function draw(){
+  if(!D) return;
+  const f=D.frames[frame]; if(!f) return;
+  const im=getImg(f.img);
+  const W=f.w, H=f.h;
+  const dpr=devicePixelRatio||1, disp=cv.clientWidth||W, sc=disp/W;
+  if(cv.width!==Math.round(disp*dpr)){cv.width=Math.round(disp*dpr);cv.height=Math.round(H*sc*dpr);}
+  cv.style.height=(H*sc)+"px";
+  ctx.setTransform(dpr*sc,0,0,dpr*sc,0,0);
+  ctx.clearRect(0,0,W,H);
+  if(im.complete && im.naturalWidth) ctx.drawImage(im,0,0,W,H);
+  else { im.onload=()=>draw(); ctx.fillStyle="#141310"; ctx.fillRect(0,0,W,H); }
+  const dets=f.dets.filter(visible);
+  if(MODE==="sam"){
+    // filled masks first, outlines on top; union mode merges every box of a prompt into one shape
+    for(const d of dets){
+      ctx.fillStyle=COL[d.key]+"38";
+      for(const poly of d.poly){ ctx.beginPath();
+        poly.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); ctx.fill(); }
+    }
+    for(const d of dets){
+      ctx.strokeStyle=(sel===d)?"#fff":COL[d.key]; ctx.lineWidth=(sel===d)?2.4:1.4;
+      for(const poly of d.poly){ ctx.beginPath();
+        poly.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); ctx.stroke(); }
+    }
+  }
+  if(MODE==="dino" || P.union){
+    for(const d of dets){
+      const [x1,y1,x2,y2]=d.box;
+      ctx.strokeStyle=(sel===d)?"#fff":COL[d.key];
+      ctx.lineWidth=(sel===d)?2.6:1.8;
+      ctx.setLineDash(MODE==="sam"?[4,3]:[]);
+      ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+      ctx.setLineDash([]);
+      if(P.labels){
+        const t=d.key+" "+d.conf.toFixed(2);
+        ctx.font="11px ui-monospace,Menlo,monospace";
+        const w=ctx.measureText(t).width+8;
+        ctx.fillStyle="rgba(18,17,13,.82)"; ctx.fillRect(x1,Math.max(0,y1-15),w,14);
+        ctx.fillStyle=COL[d.key]; ctx.fillText(t,x1+4,Math.max(10,y1-4));
+      }
+    }
+  }
+  document.getElementById("frlabel").textContent="frame "+(frame+1)+" / "+D.frames.length+"  ("+f.idx+")";
+  const byKey={}; f.dets.filter(visible).forEach(d=>byKey[d.key]=(byKey[d.key]||0)+1);
+  const multi=Object.entries(byKey).filter(([k,v])=>k.startsWith("obj")&&v>1);
+  const dl=document.getElementById("detlabel");
+  dl.textContent=Object.entries(byKey).map(([k,v])=>k+" x"+v).join("  ")||"no detections";
+  dl.style.color=multi.length?"#f0d79a":"var(--muted)";
+}
+function hit(mx,my){
+  const f=D.frames[frame]; if(!f) return null;
+  const dets=f.dets.filter(visible);
+  if(MODE==="sam"){
+    for(let i=dets.length-1;i>=0;i--){ const d=dets[i];
+      for(const poly of d.poly){ ctx.beginPath();
+        poly.forEach((p,j)=>j?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath();
+        if(ctx.isPointInPath(mx,my)) return d; } }
+  }
+  let best=null,ba=Infinity;
+  for(const d of dets){const[x1,y1,x2,y2]=d.box;
+    if(mx>=x1&&mx<=x2&&my>=y1&&my<=y2){const a=(x2-x1)*(y2-y1); if(a<ba){ba=a;best=d;}}}
+  return best;
+}
+function showSel(){
+  const e=document.getElementById("empty"), inf=document.getElementById("info");
+  if(!sel){e.style.display="";inf.style.display="none";return;}
+  e.style.display="none";inf.style.display="";
+  document.getElementById("iKey").textContent=sel.key+'  "'+sel.prompt+'"';
+  document.getElementById("iConf").textContent=sel.conf.toFixed(3);
+  const[x1,y1,x2,y2]=sel.box;
+  document.getElementById("iBox").textContent=`${x1|0}, ${y1|0} → ${x2|0}, ${y2|0}`;
+  document.getElementById("iSize").textContent=`${Math.round(x2-x1)} × ${Math.round(y2-y1)} px`;
+  const area=sel.poly.reduce((a,p)=>a+Math.abs(p.reduce((s,q,i)=>{const r=p[(i+1)%p.length];
+    return s+(q[0]*r[1]-r[0]*q[1]);},0)/2),0);
+  document.getElementById("iText").innerHTML=
+    (MODE==="sam" ? "mask parts: "+sel.poly.length+"<br>mask area: "+Math.round(area)+" px²<br>" : "")+
+    "box area: "+Math.round((x2-x1)*(y2-y1))+" px²";
+  const f=D.frames[frame];
+  const same=f.dets.filter(d=>d.key===sel.key && visible(d));
+  const w=document.getElementById("iWarn");
+  if(sel.key.startsWith("obj") && same.length>1){
+    w.style.display=""; w.innerHTML="<b>"+same.length+" boxes from this one prompt.</b> "+
+      "The pipeline unions every box for a prompt into a single mask_"+sel.key+
+      ".png, so all of these end up in one object mask.";
+  } else w.style.display="none";
+}
+cv.addEventListener("click",e=>{const r=cv.getBoundingClientRect();
+  const f=D.frames[frame]; const sc=r.width/f.w;
+  sel=hit((e.clientX-r.left)/sc,(e.clientY-r.top)/sc); showSel(); draw();});
+document.getElementById("scrub").addEventListener("input",e=>{frame=+e.target.value;sel=null;showSel();draw();});
+addEventListener("keydown",e=>{ if(!D)return; const t=e.target;
+  if(t&&t.id==="scrub")return;
+  if(e.key==="ArrowRight"){frame=(frame+1)%D.frames.length;sel=null;showSel();draw();}
+  if(e.key==="ArrowLeft"){frame=(frame-1+D.frames.length)%D.frames.length;sel=null;showSel();draw();}});
+for(const k of ["obj1","obj2","arm","labels"]){const el=document.getElementById("P"+k[0].toUpperCase()+k.slice(1));}
+["obj1","obj2","arm"].forEach(k=>{const el=document.getElementById("P"+k);
+  if(el)el.addEventListener("change",e=>{P[k]=e.target.checked?1:0;sel=null;showSel();draw();redrawTiles();});});
+const lab=document.getElementById("Plabels");
+if(lab)lab.addEventListener("change",e=>{P.labels=e.target.checked?1:0;draw();});
+const un=document.getElementById("Punion");
+if(un)un.addEventListener("change",e=>{P.union=e.target.checked?1:0;draw();});
+document.getElementById("Pconf").addEventListener("input",e=>{P.conf=+e.target.value/100;
+  document.getElementById("confv").textContent=P.conf.toFixed(2);sel=null;showSel();draw();redrawTiles();});
+function resetAll(){
+  P.obj1=1;P.obj2=1;P.arm=0;P.labels=1;P.conf=0.30;P.union=0;
+  document.getElementById("Pobj1").checked=true; document.getElementById("Pobj2").checked=true;
+  document.getElementById("Parm").checked=false;
+  if(lab)lab.checked=true; if(un)un.checked=false;
+  document.getElementById("Pconf").value=30; document.getElementById("confv").textContent="0.30";
+  frame=0; sel=null; hover=null; showSel();
+  document.getElementById("scrub").value=0;
+  draw(); redrawTiles();
+}
+document.getElementById("reset").addEventListener("click",e=>{ resetAll();
+  const b=e.currentTarget,was=b.textContent; b.textContent="reset ✓";
+  setTimeout(()=>{b.textContent=was;},700);});
+
+async function loadRec(id){
+  document.getElementById("nowview").textContent="loading "+id+"…";
+  const r=await fetch(`${DIR}/${id}.json?v=${DATA_V}`);
+  D=await r.json(); RECID=id; frame=0; sel=null; showSel();
+  document.getElementById("scrub").max=D.frames.length-1;
+  const nb=IDX.index[id]?IDX.index[id].boxes:{};
+  document.getElementById("nowview").textContent="recording "+id+" · "+D.frames.length+
+    " sampled frames · boxes "+Object.entries(nb).map(([k,v])=>k+" "+v).join(", ");
+  document.querySelectorAll(".cell").forEach(c=>c.classList.toggle("on",c.dataset.rec===id));
+  draw();
+}
+const tiles=[];
+function buildGrid(){
+  const g=document.getElementById("grid");
+  for(const id of IDX.recs){
+   try{
+    const info=IDX.index[id];
+    const cell=document.createElement("div"); cell.className="cell"; cell.dataset.rec=id;
+    cell.innerHTML='<canvas></canvas><div class="cap"><span><b>'+id+'</b>'+
+      (info.multi_obj_frames?'<span class="qflag" title="an object prompt returned more than one box on '+
+        info.multi_obj_frames+' of the sampled frames">⚠ '+info.multi_obj_frames+'</span>':'')+
+      '</span><span>cup '+(info.boxes.obj1||0)+' · plate '+(info.boxes.obj2||0)+' boxes</span></div>';
+    cell.addEventListener("click",()=>{loadRec(id);window.scrollTo({top:0,behavior:"smooth"});});
+    g.appendChild(cell);
+    tiles.push({id,el:cell,cv:cell.querySelector("canvas"),thumb:info.thumb,vis:false});
+    io.observe(cell.querySelector("canvas"));
+   }catch(err){console.error("tile "+id,err);}
+  }
+  document.getElementById("gridloading").style.display="none";
+}
+const io=new IntersectionObserver(es=>{for(const e of es){const t=tiles.find(q=>q.cv===e.target);
+  if(t){t.vis=e.isIntersecting; if(t.vis)drawTile(t);}}},{rootMargin:"150px"});
+function drawTile(t){
+  const im=getImg(t.thumb); const c=t.cv, cx=c.getContext("2d");
+  if(!im.complete||!im.naturalWidth){im.onload=()=>{if(t.vis)drawTile(t);};return;}
+  const dpr=devicePixelRatio||1, W=c.clientWidth||200, H=Math.round(W*im.naturalHeight/im.naturalWidth);
+  c.width=Math.round(W*dpr); c.height=Math.round(H*dpr); c.style.height=H+"px";
+  cx.setTransform(dpr,0,0,dpr,0,0); cx.drawImage(im,0,0,W,H);
+}
+function redrawTiles(){for(const t of tiles) if(t.vis) drawTile(t);}
+
+(async function(){
+  IDX=await (await fetch(`${DIR}/index.json?v=${DATA_V}`)).json();
+  buildGrid();
+  const ids=IDX.recs, I=ids.map(i=>IDX.index[i]);
+  document.getElementById("stN").textContent=ids.length;
+  document.getElementById("stF").textContent=I.reduce((a,x)=>a+x.n,0);
+  document.getElementById("stB").textContent=I.reduce((a,x)=>a+(x.boxes.obj1||0),0);
+  document.getElementById("stM").textContent=I.reduce((a,x)=>a+x.multi_obj_frames,0);
+  const want=(location.hash||"").replace("#","");
+  await loadRec(ids.includes(want)?want:ids[0]);
+  addEventListener("hashchange",()=>{const h=(location.hash||"").replace("#","");
+    if(IDX.recs.includes(h)&&h!==RECID){loadRec(h);window.scrollTo({top:0,behavior:"smooth"});}});
+  addEventListener("resize",()=>{draw();redrawTiles();});
+})();
+</script>
+</body></html>
