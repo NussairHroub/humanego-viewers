@@ -385,8 +385,11 @@ cv.addEventListener("wheel",e=>{e.preventDefault();
   dist=Math.max(DIST0*0.25,Math.min(DIST0*4,dist*(1+Math.sign(e.deltaY)*0.09)));draw();},{passive:false});
 document.getElementById("scrub").addEventListener("input",e=>{frame=+e.target.value;draw();});
 document.getElementById("play").addEventListener("click",e=>{playing=!playing;e.target.textContent=playing?"⏸ pause":"▶ play";});
-document.getElementById("reset").addEventListener("click",()=>{yaw=-0.6;pitch=0.5;dist=DIST0;draw();
-  for(const t of tiles){t.yaw=-0.6;t.pitch=0.5;t.dist=t.dist0;} redrawTiles();});
+document.getElementById("reset").addEventListener("click",e=>{
+  yaw=-0.6;pitch=0.5;dist=DIST0; sel=null;hover=null;showSel(); drag=null; draw();
+  for(const t of tiles){t.yaw=-0.6;t.pitch=0.5;t.dist=t.dist0;t.drag=null; if(t.sized)drawTile(t);}
+  const b=e.currentTarget, was=b.textContent;
+  b.textContent="reset \u2713"; setTimeout(()=>{b.textContent=was;},700);});
 addEventListener("keydown",e=>{const t=e.target; if(!D)return;
   if(t&&t.id==="scrub"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
   if(e.key===" "){e.preventDefault();playing=!playing;document.getElementById("play").textContent=playing?"⏸ pause":"▶ play";}

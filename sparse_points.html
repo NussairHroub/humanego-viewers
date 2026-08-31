@@ -195,7 +195,7 @@
 </div>
 <script>
 const DATA_DIR="sp_data";
-const DATA_V="3";   // bump whenever the payload schema changes
+const DATA_V="2";   // bump whenever the payload schema changes
 function decF(b,n){const s=atob(b),u=Uint8Array.from(s,c=>c.charCodeAt(0));const v=new DataView(u.buffer);
   const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=v.getFloat32(i*4,true);return a;}
 function decU(b){const s=atob(b);return Uint8Array.from(s,c=>c.charCodeAt(0));}
@@ -418,10 +418,18 @@ document.getElementById("prov").addEventListener("click",e=>{ if(!D)return;
   sel=null; showSel(); draw();});
 document.getElementById("scrub").addEventListener("input",e=>{frame=+e.target.value;if(sel){sel=null;showSel();}draw();});
 document.getElementById("play").addEventListener("click",e=>{playing=!playing;e.target.textContent=playing?"⏸ pause":"▶ play";});
-document.getElementById("reset").addEventListener("click",()=>{
-  yaw=-0.6;pitch=0.5;dist=DIST0;draw();
-  for(const t of tiles){t.yaw=-0.6;t.pitch=0.5;t.dist=t.dist0;}
-  redrawTiles();});
+document.getElementById("reset").addEventListener("click",e=>{
+  yaw=-0.6;pitch=0.5;dist=DIST0;
+  sel=null;hover=null;showSel();
+  drag=null;
+  draw();
+  for(const t of tiles){t.yaw=-0.6;t.pitch=0.5;t.dist=t.dist0;t.drag=null;
+    if(t.sized)drawTile(t);}
+  // confirm the click landed: without this a reset from an already-default view, or from the
+  // sticky bar while the canvas is scrolled out of sight, is indistinguishable from nothing
+  const b=e.currentTarget, was=b.textContent;
+  b.textContent="reset \u2713";
+  setTimeout(()=>{b.textContent=was;},700);});
 addEventListener("keydown",e=>{const t=e.target;
   if(t&&t.id==="scrub"&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))return;
   if(!D)return;
