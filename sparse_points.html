@@ -195,7 +195,7 @@
 </div>
 <script>
 const DATA_DIR="sp_data";
-const DATA_V="2";   // bump whenever the payload schema changes
+const DATA_V="3";   // bump whenever the payload schema changes
 function decF(b,n){const s=atob(b),u=Uint8Array.from(s,c=>c.charCodeAt(0));const v=new DataView(u.buffer);
   const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=v.getFloat32(i*4,true);return a;}
 function decU(b){const s=atob(b);return Uint8Array.from(s,c=>c.charCodeAt(0));}
