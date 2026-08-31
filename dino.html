@@ -65,7 +65,7 @@
 </style></head><body>
 <div class="wrap">
   <h1>Grounding DINO — what the text prompt matched</h1>
-  <nav class="nav"><a href="presentation.html">Dynamic Scenes</a><a href="sparse_points.html">Sparse Points</a><a href="trajectory.html">Camera Trajectory</a><a href="dino.html" class="on">DINO Boxes</a><a href="sam.html">SAM Masks</a><a href="collected_demos.html">Collected Demos</a><a href="hand_tracking.html">Hand Tracking</a><a href="preprocessing.html">Preprocessing</a><a href="rollout_gallery.html">Robot Rollouts</a><a href="object_orientations.html">Object Orientations</a><a href="index.html">All Viewers</a></nav>
+  <nav class="nav"><a href="presentation.html">Dynamic Scenes</a><a href="sparse_points.html">Sparse Points</a><a href="trajectory.html">Camera Trajectory</a><a href="dino.html" class="on">DINO Boxes</a><a href="sam.html">SAM Masks</a><a href="ict.html">ICT Tokens</a><a href="collected_demos.html">Collected Demos</a><a href="hand_tracking.html">Hand Tracking</a><a href="preprocessing.html">Preprocessing</a><a href="rollout_gallery.html">Robot Rollouts</a><a href="object_orientations.html">Object Orientations</a><a href="index.html">All Viewers</a></nav>
   <p class="sub">The first stage of segmentation: each object is found by a <b>free-text prompt</b> passed to
    <b>Grounding DINO</b>, which returns boxes above a 0.30 score. Nothing downstream checks that a prompt
    matched exactly one thing. These boxes are <b>not saved by the pipeline</b> — it keeps only the final
@@ -237,7 +237,6 @@ addEventListener("keydown",e=>{ if(!D)return; const t=e.target;
   if(t&&t.id==="scrub")return;
   if(e.key==="ArrowRight"){frame=(frame+1)%D.frames.length;sel=null;showSel();draw();}
   if(e.key==="ArrowLeft"){frame=(frame-1+D.frames.length)%D.frames.length;sel=null;showSel();draw();}});
-for(const k of ["obj1","obj2","arm","labels"]){const el=document.getElementById("P"+k[0].toUpperCase()+k.slice(1));}
 ["obj1","obj2","arm"].forEach(k=>{const el=document.getElementById("P"+k);
   if(el)el.addEventListener("change",e=>{P[k]=e.target.checked?1:0;sel=null;showSel();draw();redrawTiles();});});
 const lab=document.getElementById("Plabels");

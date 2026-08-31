@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Interaction-Centric Tokens</title>
+<style>
+  :root{--bg:#12110d;--card:#1c1b17;--ink:#e9e7e2;--muted:#a09d95;--line:#3a3934;--accent:#6da7ec;
+        --hand:#7ad97a;--anc:#c9a476;--oth:#dddddd;--dead:#4a4944}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1280px;margin:0 auto;padding:40px 22px 80px}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.01em}
+  h2{font-size:19px;margin:30px 0 4px;letter-spacing:-.01em}
+  .nav{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 14px}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:4px 11px;border:1px solid var(--line);border-radius:16px}
+  .nav a.on{color:var(--ink);border-color:#5a594f;background:var(--card)}
+  .sub{color:var(--muted);font-size:15px;max-width:900px;margin:0 0 10px}
+  .sub a{color:var(--accent)} .sub code,.foot code{color:var(--ink)}
+  .stats{display:flex;gap:26px;flex-wrap:wrap;margin:16px 0 22px;color:var(--muted);font-size:13.5px}
+  .stats b{color:var(--ink);font-size:17px;display:block;font-variant-numeric:tabular-nums}
+  #gbar{position:sticky;top:0;z-index:50;background:rgba(18,17,13,.94);backdrop-filter:blur(4px);
+    border-bottom:1px solid var(--line);margin:0 -22px 18px;padding:9px 22px;display:flex;gap:16px;
+    flex-wrap:wrap;align-items:center;font-size:13px}
+  #gbar label{display:flex;gap:6px;align-items:center;cursor:pointer;user-select:none;color:var(--muted)}
+  #gbar label input:checked+span{color:var(--ink)}
+  #gbar button{background:#2e2d29;border:1px solid #4a4944;color:#e9e7e2;border-radius:8px;
+    padding:3px 12px;cursor:pointer;font-size:13px}
+  #gbar button:hover{background:#3a3934}
+  .stage{display:grid;grid-template-columns:1fr 316px;gap:16px;align-items:start}
+  @media(max-width:900px){.stage{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+  #geo{display:block;width:100%;aspect-ratio:1.5;cursor:crosshair;touch-action:none}
+  #mat{display:block;width:100%;cursor:crosshair}
+  #act{display:block;width:100%;height:56px}
+  .lbl{position:absolute;left:12px;top:9px;font-size:12px;color:var(--ink);pointer-events:none;
+       background:rgba(18,17,13,.72);padding:3px 9px;border-radius:7px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+  .panel h3{margin:0 0 10px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .empty{color:var(--muted);font-size:13px;margin:0}
+  .kv{display:grid;grid-template-columns:60px 1fr;gap:5px 10px;font-size:13px;align-items:baseline}
+  .kv dt{color:var(--muted)} .kv dd{margin:0;font-variant-numeric:tabular-nums}
+  .mono{margin:12px 0 0;padding:10px 11px;background:#141310;border:1px solid var(--line);border-radius:10px;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.65}
+  .note{margin:10px 0 0;padding:9px 11px;border-radius:9px;font-size:12.5px}
+  .note.dead{background:#4a2320;color:#f0a99a}
+  .note.live{background:#25402a;color:#9fe0a8}
+  .tl{display:flex;align-items:center;gap:12px;margin:12px 0 0}
+  .tl input[type=range]{flex:1;accent-color:var(--accent)}
+  .tl .fr{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);min-width:160px}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+  @media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer}
+  .cell:hover{border-color:#6a695f} .cell.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .cell canvas{display:block;width:100%;height:74px;background:#141310}
+  .cap{display:flex;flex-direction:column;gap:1px;padding:7px 10px;font-size:11.5px;color:var(--muted)}
+  .cap b{color:var(--ink);font-size:13px}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:30px;border-top:1px solid var(--line);padding-top:14px;max-width:900px}
+  .foot a{color:var(--accent)} .foot b{color:var(--ink)}
+  .loading{color:var(--muted);font-size:13px;padding:10px 0}
+</style></head><body>
+<div class="wrap">
+  <h1>Interaction-Centric Tokens</h1>
+  <nav class="nav"><a href="presentation.html">Dynamic Scenes</a><a href="sparse_points.html">Sparse Points</a><a href="trajectory.html">Camera Trajectory</a><a href="dino.html">DINO Boxes</a><a href="sam.html">SAM Masks</a><a href="ict.html" class="on">ICT Tokens</a><a href="collected_demos.html">Collected Demos</a><a href="hand_tracking.html">Hand Tracking</a><a href="preprocessing.html">Preprocessing</a><a href="rollout_gallery.html">Robot Rollouts</a><a href="object_orientations.html">Object Orientations</a><a href="index.html">All Viewers</a></nav>
+  <p class="sub">The <b>ICT</b> is what the policy actually sees: an <b>8 × 20</b> matrix per frame, one row
+  per entity, encoding every hand and object as
+  <code>[ type ǀ pose_in_ref (pos 3 + rot6d 6) ǀ hand_in_entity 9 ǀ flag ]</code>.
+  It is the bridge between the scene's geometry and a vector, so both halves are shown together and
+  <b>linked</b>: the geometry on the left is exactly what the numbers on the right encode.
+  <b>Click a cell</b> to see what it means, or click an entity in the 3D view to select its row.
+  Channels that never change across the recording are drawn dead — for <i>cup&nbsp;→&nbsp;plate</i> that
+  turns out to be most of the matrix.</p>
+  <div class="stats">
+    <div><b id="stN">—</b>recordings</div>
+    <div><b>8 × 20</b>token slots × channels</div>
+    <div><b id="stP">—</b>slots that are PAD in every frame</div>
+    <div><b id="stL">—</b>of 160 numbers that vary per frame</div>
+    <div><b id="stC">—</b>constant channels on the anchor row</div>
+  </div>
+  <div id="gbar">
+    <button id="play">⏸ pause</button>
+    <label><input type="checkbox" id="Tdead" checked><span>mark dead channels</span></label>
+    <label><input type="checkbox" id="Tpad" checked><span>show PAD rows</span></label>
+    <label><input type="checkbox" id="Traw"><span>un-normalise positions</span></label>
+    <label><input type="checkbox" id="Trot"><span>auto-rotate</span></label>
+    <button id="reset" title="restore every control and replay from the first frame">reset all</button>
+  </div>
+  <div class="stage">
+    <div class="card">
+      <canvas id="geo"></canvas>
+      <div class="lbl" id="geolbl">—</div>
+    </div>
+    <div class="panel">
+      <h3>Channel</h3>
+      <p class="empty" id="empty">Click a cell in the matrix, or an entity in the 3D view.</p>
+      <div id="info" style="display:none">
+        <dl class="kv">
+          <dt>row</dt><dd id="iRow">—</dd>
+          <dt>channel</dt><dd id="iCh">—</dd>
+          <dt>value</dt><dd id="iVal">—</dd>
+          <dt>range</dt><dd id="iRange">—</dd>
+        </dl>
+        <div class="mono" id="iMeaning"></div>
+        <div class="note" id="iNote"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><canvas id="mat"></canvas></div>
+  <div class="tl">
+    <span class="fr" id="frlabel">frame — / —</span>
+    <input type="range" id="scrub" min="0" max="0" value="0">
+    <span class="fr" id="grasplabel" style="text-align:right"></span>
+  </div>
+  <h2>What actually moves</h2>
+  <p class="sub" style="margin-bottom:6px">Per-channel range over the whole recording, same column order as
+  the matrix. A flat bar is a number the network receives that never changes.</p>
+  <div class="card"><canvas id="act"></canvas></div>
+  <h2>All recordings</h2>
+  <p class="sub" style="margin-bottom:0">Each tile is that recording's activity profile. <b>Click one to
+  load it above.</b></p>
+  <div class="loading" id="gridloading">loading…</div>
+  <div class="grid" id="grid"></div>
+  <p class="foot">Tokens are built with <code>utils/ict.py::build_ict</code>, the standalone copy of the
+  dataloader's <code>_build_ict</code>, in <code>camera_frame</code> mode — so the reference frame is
+  <code>cam0</code>, fixed for the whole episode. Row order is fixed: hands, then the anchor
+  <code>obj1</code>, then other objects, then PAD. Positions are z-scored by the dataset statistics; here
+  those are computed per recording rather than over the training mix, so absolute values differ slightly
+  from training while the structure does not. <b>Why so much of the matrix is dead:</b> the objects are
+  static in the world and the reference frame is fixed per episode, so an object's entire
+  <code>pose_in_ref</code> block is constant and only <code>hand_in_entity</code> moves — and that block is
+  an affine function of the hand's own row (residual 1.9e-06), so it carries no independent information
+  within a recording. See also <a href="sparse_points.html">Sparse Points</a> ·
+  <a href="trajectory.html">Camera Trajectory</a>.</p>
+</div>
+<script>
+const DIR="ict_data", DATA_V="1";
+function decF(b,n){const s=atob(b),u=Uint8Array.from(s,c=>c.charCodeAt(0));const v=new DataView(u.buffer);
+  const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=v.getFloat32(i*4,true);return a;}
+function decU(b){const s=atob(b);return Uint8Array.from(s,c=>c.charCodeAt(0));}
+const TYPE={0:"PAD",1:"HAND_L",2:"HAND_R",3:"OBJ_ANCHOR",4:"OBJ_OTHER"};
+const TCOL={0:"#4a4944",1:"#7ad97a",2:"#7ad97a",3:"#c9a476",4:"#dddddd"};
+const GROUPS=[[0,1,"type"],[1,4,"pose_in_ref · position"],[4,10,"pose_in_ref · rot6d"],
+              [10,19,"hand_in_entity"],[19,20,"flag"]];
+const MEANING=(c,names)=>{
+  if(c===0) return "Entity type id. Constant for a slot: it labels the row, it is not a measurement.";
+  if(c>=1&&c<4) return "Position of this entity in the reference frame (cam0), z-scored by the dataset "+
+    "position statistics. For a static object this never changes.";
+  if(c>=4&&c<10) return "Orientation as the first two columns of the rotation matrix (Zhou et al. 6D "+
+    "form), which avoids the discontinuities of Euler angles or quaternions.";
+  if(c>=10&&c<19) return "The HAND expressed in THIS entity's frame — position 3 then rot6d 6. This is the "+
+    "relational part of the token, and the only part that moves for a static object.";
+  return "Grasp flag: 0 open, 1 closed for a hand row; -1 for an object row.";
+};
+let IDX=null,D=null,RECID=null,frame=0,playing=true,sel=null,NAMES=[];
+const T={dead:1,pad:1,raw:0,rot:0};
+let yaw=-0.6,pitch=0.5,dist=1,DIST0=1,drag=null,moved=0;
+const geo=document.getElementById("geo"), gx=geo.getContext("2d");
+const mat=document.getElementById("mat"), mx=mat.getContext("2d");
+const act=document.getElementById("act"), ax=act.getContext("2d");
+
+function isConst(s,c){ return D.const[s] && D.const[s].includes(c); }
+function val(f,s,c){ return D.ict[(f*D.T+s)*D.D+c]; }
+function slotValid(f,s){ return D.mask[f*D.T+s]===1; }
+
+// ---------------------------------------------------------------- matrix
+let cells=[];
+function drawMat(){
+  if(!D) return;
+  const rows=[]; for(let s=0;s<D.T;s++){ if(!T.pad && !D.mask.slice(0,D.T).some((_,i)=>false)){} }
+  const shown=[]; for(let s=0;s<D.T;s++){ const anyValid=[...Array(D.F).keys()].some(f=>slotValid(f,s));
+    if(anyValid||T.pad) shown.push(s); }
+  const dpr=devicePixelRatio||1, W=mat.clientWidth||1000;
+  const padL=104, padT=34, padB=10, cw=(W-padL-12)/D.D, ch=30;
+  const H=padT+shown.length*ch+padB;
+  mat.width=Math.round(W*dpr); mat.height=Math.round(H*dpr); mat.style.height=H+"px";
+  mx.setTransform(dpr,0,0,dpr,0,0); mx.clearRect(0,0,W,H);
+  cells=[];
+  // column group headers
+  mx.font="11px ui-monospace,Menlo,monospace"; mx.textBaseline="middle";
+  for(const [a,b,name] of GROUPS){
+    const x0=padL+a*cw, x1=padL+b*cw;
+    mx.fillStyle="#2a2925"; mx.fillRect(x0+1,6,x1-x0-2,15);
+    mx.fillStyle="var(--muted)"; mx.fillStyle="#a09d95";
+    const t=name.length*6>x1-x0-6?name.split(" ")[0]:name;
+    mx.fillText(t,x0+5,14);
+  }
+  shown.forEach((s,ri)=>{
+    const y=padT+ri*ch, tid=val(0,s,0)|0, valid=slotValid(frame,s);
+    mx.fillStyle=TCOL[tid]||"#666"; mx.font="12px ui-monospace,Menlo,monospace";
+    mx.fillText("slot "+s, 8, y+ch/2-6);
+    mx.fillStyle=valid?"#a09d95":"#5a594f"; mx.font="10.5px ui-monospace,Menlo,monospace";
+    mx.fillText(TYPE[tid]||"?", 8, y+ch/2+7);
+    for(let c=0;c<D.D;c++){
+      const x=padL+c*cw, v=val(frame,s,c);
+      let fill;
+      if(!valid){ fill="#191814"; }
+      else if(T.dead && isConst(String(s),c)){ fill="#232220"; }
+      else {
+        const t=Math.max(-1,Math.min(1,v/3));         // z-scored: +/-3 sigma covers the range
+        fill = t>=0 ? `rgba(109,167,236,${0.12+0.78*t})` : `rgba(212,103,79,${0.12+0.78*-t})`;
+      }
+      mx.fillStyle=fill; mx.fillRect(x+1,y+1,cw-2,ch-2);
+      if(T.dead && valid && isConst(String(s),c)){
+        mx.strokeStyle="#3a3934"; mx.lineWidth=1; mx.beginPath();
+        mx.moveTo(x+2,y+ch-3); mx.lineTo(x+cw-3,y+3); mx.stroke();
+      }
+      if(sel && sel.s===s && sel.c===c){ mx.strokeStyle="#fff"; mx.lineWidth=2; mx.strokeRect(x+1,y+1,cw-2,ch-2); }
+      cells.push({x,y,w:cw,h:ch,s,c});
+    }
+  });
+}
+mat.addEventListener("click",e=>{const r=mat.getBoundingClientRect();
+  const mxp=e.clientX-r.left, myp=e.clientY-r.top;
+  const hit=cells.find(k=>mxp>=k.x&&mxp<=k.x+k.w&&myp>=k.y&&myp<=k.y+k.h);
+  if(hit){sel={s:hit.s,c:hit.c}; showSel(); drawMat(); drawGeo();}});
+
+// ---------------------------------------------------------------- geometry
+function proj(p){
+  const C=D.centre;
+  let x=p[0]-C[0], y=p[1]-C[1], z=p[2]-C[2];
+  const ca=Math.cos(yaw),sa=Math.sin(yaw); const X=x*ca-y*sa,Y=x*sa+y*ca;
+  const cb=Math.cos(pitch),sb=Math.sin(pitch); const Y2=Y*cb-z*sb,Z2=Y*sb+z*cb;
+  const d=dist+Y2; if(d<DIST0*0.05) return null;
+  const W=geo.clientWidth, H=geo.clientHeight, f=W*0.85;
+  return [W/2+X*f/d, H/2-Z2*f/d, d];
+}
+function rawPos(f,s){ const o=(f*D.T+s)*3; return [D.raw[o],D.raw[o+1],D.raw[o+2]]; }
+function drawGeo(){
+  if(!D) return;
+  const dpr=devicePixelRatio||1, W=geo.clientWidth, H=Math.round(W/1.5);
+  if(geo.width!==Math.round(W*dpr)){geo.width=Math.round(W*dpr);geo.height=Math.round(H*dpr);}
+  geo.style.height=H+"px"; gx.setTransform(dpr,0,0,dpr,0,0); gx.clearRect(0,0,W,H);
+  const live=[]; for(let s=0;s<D.T;s++) if(slotValid(frame,s)) live.push(s);
+  // hand_in_entity: an arrow from each object to the hand, the relation the token encodes
+  const hs=live.find(s=>[1,2].includes(val(0,s,0)|0));
+  if(hs!==undefined){
+    const hp=proj(rawPos(frame,hs));
+    for(const s of live){ const tid=val(0,s,0)|0; if(tid<3) continue;
+      const p=proj(rawPos(frame,s)); if(!p||!hp) continue;
+      const on = sel && sel.s===s && sel.c>=10 && sel.c<19;
+      gx.beginPath(); gx.moveTo(p[0],p[1]); gx.lineTo(hp[0],hp[1]);
+      gx.strokeStyle=on?"rgba(255,255,255,.9)":"rgba(160,157,149,.35)";
+      gx.lineWidth=on?2.4:1.2; gx.stroke();
+      if(on){ const mxp=(p[0]+hp[0])/2, myp=(p[1]+hp[1])/2;
+        gx.fillStyle="#fff"; gx.font="11px ui-monospace,Menlo,monospace";
+        gx.fillText("hand_in_entity", mxp+6, myp-4); }
+    }
+  }
+  for(const s of live){
+    const tid=val(0,s,0)|0, p=proj(rawPos(frame,s)); if(!p) continue;
+    const on = sel && sel.s===s;
+    gx.beginPath(); gx.arc(p[0],p[1], on?7:5, 0, 6.283);
+    gx.fillStyle=TCOL[tid]; gx.fill();
+    if(on){ gx.strokeStyle="#fff"; gx.lineWidth=2; gx.stroke(); }
+    gx.fillStyle=on?"#fff":"#a09d95"; gx.font="11px ui-monospace,Menlo,monospace";
+    gx.fillText(TYPE[tid].toLowerCase()+"  (slot "+s+")", p[0]+10, p[1]+4);
+  }
+  document.getElementById("geolbl").textContent =
+    "reference frame cam0 · "+live.length+" live rows, "+(D.T-live.length)+" PAD";
+}
+geo.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY};moved=0;});
+geo.addEventListener("pointermove",e=>{ if(drag&&!(e.buttons&1))drag=null;
+  if(!drag)return; const dx=e.clientX-drag.x,dy=e.clientY-drag.y; moved+=Math.abs(dx)+Math.abs(dy);
+  yaw+=dx*0.008; pitch=Math.max(-1.4,Math.min(1.4,pitch+dy*0.006));
+  drag={x:e.clientX,y:e.clientY}; drawGeo();});
+addEventListener("pointerup",()=>{drag=null;},true);
+geo.addEventListener("click",e=>{ if(moved>=4){moved=0;return;}
+  const r=geo.getBoundingClientRect(), mxp=e.clientX-r.left, myp=e.clientY-r.top;
+  let best=null,bd=400;
+  for(let s=0;s<D.T;s++){ if(!slotValid(frame,s))continue; const p=proj(rawPos(frame,s)); if(!p)continue;
+    const d=(p[0]-mxp)**2+(p[1]-myp)**2; if(d<bd){bd=d;best=s;} }
+  if(best!==null){ sel={s:best,c:sel&&sel.s===best?sel.c:10}; showSel(); drawMat(); drawGeo(); }});
+geo.addEventListener("wheel",e=>{e.preventDefault();
+  dist=Math.max(DIST0*0.3,Math.min(DIST0*4,dist*(1+Math.sign(e.deltaY)*0.09)));drawGeo();},{passive:false});
+
+// ---------------------------------------------------------------- activity strip
+function drawAct(){
+  if(!D) return;
+  const dpr=devicePixelRatio||1, W=act.clientWidth, H=56;
+  act.width=Math.round(W*dpr); act.height=Math.round(H*dpr);
+  ax.setTransform(dpr,0,0,dpr,0,0); ax.clearRect(0,0,W,H);
+  const padL=104, cw=(W-padL-12)/D.D;
+  const live=[]; for(let s=0;s<D.T;s++) if([...Array(D.F).keys()].some(f=>slotValid(f,s))) live.push(s);
+  const rh=(H-8)/live.length;
+  live.forEach((s,ri)=>{
+    for(let c=0;c<D.D;c++){
+      let lo=1e9,hi=-1e9;
+      for(let f=0;f<D.F;f++){ if(!slotValid(f,s))continue; const v=val(f,s,c); lo=Math.min(lo,v); hi=Math.max(hi,v); }
+      const rng=hi-lo, t=Math.min(1,rng/2);
+      ax.fillStyle = rng===0 ? "#2a2925" : `rgba(109,167,236,${0.2+0.8*t})`;
+      ax.fillRect(padL+c*cw+1, 4+ri*rh+1, cw-2, rh-2);
+    }
+    ax.fillStyle="#a09d95"; ax.font="10px ui-monospace,Menlo,monospace";
+    ax.fillText("slot "+s, 8, 4+ri*rh+rh/2+3);
+  });
+}
+// ---------------------------------------------------------------- inspector
+function showSel(){
+  const e=document.getElementById("empty"), inf=document.getElementById("info");
+  if(!sel){e.style.display="";inf.style.display="none";return;}
+  e.style.display="none"; inf.style.display="";
+  const {s,c}=sel, tid=val(0,s,0)|0, valid=slotValid(frame,s);
+  document.getElementById("iRow").textContent="slot "+s+" · "+TYPE[tid];
+  document.getElementById("iCh").textContent=NAMES[c]+"  (col "+c+")";
+  let v=val(frame,s,c), shown=v.toFixed(4);
+  if(T.raw && c>=1 && c<4) shown=((v*D.pos_std[c-1]+D.pos_mean[c-1])*100).toFixed(2)+" cm";
+  document.getElementById("iVal").textContent=valid?shown:"— (PAD)";
+  let lo=1e9,hi=-1e9;
+  for(let f=0;f<D.F;f++){ if(!slotValid(f,s))continue; const q=val(f,s,c); lo=Math.min(lo,q); hi=Math.max(hi,q); }
+  document.getElementById("iRange").textContent=valid?(lo.toFixed(3)+" … "+hi.toFixed(3)):"—";
+  document.getElementById("iMeaning").textContent=MEANING(c,NAMES);
+  const n=document.getElementById("iNote");
+  if(!valid){ n.className="note dead"; n.textContent="This row is PAD in every frame — the slot exists but no entity fills it."; }
+  else if(isConst(String(s),c)){ n.className="note dead";
+    n.textContent="Constant for the whole recording. The network receives this number every frame and it never changes."; }
+  else { n.className="note live"; n.textContent="This value changes across the recording."; }
+}
+// ---------------------------------------------------------------- load / loop
+async function loadRec(id){
+  const r=await fetch(`${DIR}/${id}.json?v=${DATA_V}`); const p=await r.json();
+  const F=p.F,Tn=p.T,Dn=p.D;
+  D={F,T:Tn,D:Dn,idx:p.idx,ict:decF(p.ict,F*Tn*Dn),mask:decU(p.mask),raw:decF(p.raw,F*Tn*3),
+     grasp:decU(p.grasp),pos_mean:p.pos_mean,pos_std:p.pos_std,const:p.const,
+     n_pad:p.n_pad,n_live:p.n_live};
+  // centre and scale the geometry on the live entities
+  let c=[0,0,0],n=0,rad=0.001;
+  for(let f=0;f<F;f++)for(let s=0;s<Tn;s++) if(D.mask[f*Tn+s]){const o=(f*Tn+s)*3;
+    c[0]+=D.raw[o];c[1]+=D.raw[o+1];c[2]+=D.raw[o+2];n++;}
+  D.centre=c.map(v=>v/Math.max(n,1));
+  for(let f=0;f<F;f++)for(let s=0;s<Tn;s++) if(D.mask[f*Tn+s]){const o=(f*Tn+s)*3;
+    rad=Math.max(rad,Math.hypot(D.raw[o]-D.centre[0],D.raw[o+1]-D.centre[1],D.raw[o+2]-D.centre[2]));}
+  DIST0=rad*2.6; dist=DIST0; yaw=-0.6; pitch=0.5;
+  RECID=id; frame=0; sel=null; showSel();
+  document.getElementById("scrub").max=F-1;
+  document.querySelectorAll(".cell").forEach(x=>x.classList.toggle("on",x.dataset.rec===id));
+  document.getElementById("stP").textContent=D.n_pad+" / "+Tn;
+  document.getElementById("stL").textContent=D.n_live;
+  document.getElementById("stC").textContent=(D.const["1"]?D.const["1"].length:0)+" / 20";
+  drawMat(); drawGeo(); drawAct();
+}
+for(const k of ["dead","pad","raw","rot"]){const el=document.getElementById("T"+k);
+  if(el)el.addEventListener("change",e=>{T[k]=e.target.checked?1:0;drawMat();drawGeo();showSel();});}
+document.getElementById("scrub").addEventListener("input",e=>{frame=+e.target.value;
+  playing=false;document.getElementById("play").textContent="▶ play";drawMat();drawGeo();showSel();});
+document.getElementById("play").addEventListener("click",e=>{playing=!playing;
+  e.target.textContent=playing?"⏸ pause":"▶ play";});
+function resetAll(){
+  T.dead=1;T.pad=1;T.raw=0;T.rot=0;
+  ["Tdead","Tpad"].forEach(i=>document.getElementById(i).checked=true);
+  ["Traw","Trot"].forEach(i=>document.getElementById(i).checked=false);
+  frame=0;playing=true;document.getElementById("play").textContent="⏸ pause";
+  yaw=-0.6;pitch=0.5;dist=DIST0;drag=null;sel=null;showSel();
+  document.getElementById("scrub").value=0;
+  drawMat();drawGeo();drawAct();
+}
+document.getElementById("reset").addEventListener("click",e=>{resetAll();
+  const b=e.currentTarget,was=b.textContent;b.textContent="reset ✓";setTimeout(()=>{b.textContent=was;},700);});
+addEventListener("keydown",e=>{if(!D)return;const t=e.target;if(t&&t.id==="scrub")return;
+  if(e.key===" "){e.preventDefault();playing=!playing;document.getElementById("play").textContent=playing?"⏸ pause":"▶ play";}
+  if(e.key==="ArrowRight"){playing=false;frame=(frame+1)%D.F;drawMat();drawGeo();showSel();}
+  if(e.key==="ArrowLeft"){playing=false;frame=(frame-1+D.F)%D.F;drawMat();drawGeo();showSel();}});
+addEventListener("resize",()=>{drawMat();drawGeo();drawAct();redrawTiles();});
+let last=performance.now(),acc=0;
+function loop(ts){const dt=ts-last;last=ts;
+  if(T.rot&&!drag){yaw+=0.0035;drawGeo();}
+  if(playing&&D){acc+=dt; if(acc>90){acc=0;frame=(frame+1)%D.F;drawMat();drawGeo();
+    document.getElementById("frlabel").textContent="frame "+(frame+1)+" / "+D.F+"  ("+D.idx[frame]+")";
+    const g=document.getElementById("grasplabel");
+    g.textContent=D.grasp[frame]?"grasp CLOSED":"grasp open";
+    g.style.color=D.grasp[frame]?"#7ad97a":"var(--muted)";}}
+  requestAnimationFrame(loop);}
+// ---------------------------------------------------------------- grid
+const tiles=[];
+function buildGrid(){
+  const g=document.getElementById("grid");
+  for(const id of IDX.recs){
+    const info=IDX.index[id];
+    const cell=document.createElement("div"); cell.className="cell"; cell.dataset.rec=id;
+    cell.innerHTML='<canvas></canvas><div class="cap"><b>'+id+'</b><span>'+
+      info.n_live+'/160 vary · '+info.n_pad+' PAD</span></div>';
+    cell.addEventListener("click",()=>{loadRec(id);window.scrollTo({top:0,behavior:"smooth"});});
+    g.appendChild(cell);
+    tiles.push({id,el:cell,cv:cell.querySelector("canvas"),info,vis:false});
+    io.observe(cell.querySelector("canvas"));
+  }
+  document.getElementById("gridloading").style.display="none";
+}
+const io=new IntersectionObserver(es=>{for(const e of es){const t=tiles.find(q=>q.cv===e.target);
+  if(t){t.vis=e.isIntersecting; if(t.vis)drawTile(t);}}},{rootMargin:"150px"});
+function drawTile(t){
+  const c=t.cv,cx=c.getContext("2d"),dpr=devicePixelRatio||1,W=c.clientWidth||200,H=74;
+  c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);cx.setTransform(dpr,0,0,dpr,0,0);
+  cx.clearRect(0,0,W,H);
+  const types=t.info.types, cw=W/20, rh=H/types.length;
+  types.forEach((tid,s)=>{ for(let col=0;col<20;col++){
+    const dead = tid===0;
+    cx.fillStyle = dead ? "#1d1c19" : (col===0?"#2a2925":"rgba(109,167,236,.55)");
+    cx.fillRect(col*cw+0.5,s*rh+0.5,cw-1,rh-1); }});
+}
+function redrawTiles(){for(const t of tiles) if(t.vis) drawTile(t);}
+(async function(){
+  IDX=await (await fetch(`${DIR}/index.json?v=${DATA_V}`)).json();
+  NAMES=IDX.names;
+  document.getElementById("stN").textContent=IDX.recs.length;
+  buildGrid();
+  const want=(location.hash||"").replace("#","");
+  await loadRec(IDX.recs.includes(want)?want:IDX.recs[0]);
+  addEventListener("hashchange",()=>{const h=(location.hash||"").replace("#","");
+    if(IDX.recs.includes(h)&&h!==RECID)loadRec(h);});
+  requestAnimationFrame(loop);
+})();
+</script>
+</body></html>
