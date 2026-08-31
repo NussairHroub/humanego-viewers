@@ -87,8 +87,12 @@
   on this site is expressed in. The blue line is the device path over the whole recording; the
   <span style="color:var(--cam)">tan frustums</span> are the <b>rectified RGB camera poses</b>
   (<code>c2w</code>) at the frames the pipeline consumes, which is the pose the policy's reference
-  transform is built from. <b>Click any pose</b> for its position and orientation. Every recording is in
-  the grid below — <b>click a tile to load it here</b>.</p>
+  transform is built from. <b>Click any pose</b> for its position and orientation.
+  The frustums sit in one tight cluster on purpose: the pipeline only extracts the manipulation
+  window, which spans a median 62% of each recording in <i>time</i> but about 5% of its
+  <i>spatial</i> extent — the wearer walks to the table first, then stands still and works. Use the
+  <b>camera frustums</b> switch to show them all, reveal them progressively along the timeline, or
+  follow just the live one. Every recording is in the grid below — <b>click a tile to load it here</b>.</p>
   <div class="stats">
     <div><b id="stN">—</b>recordings</div>
     <div><b id="stD">—</b>total recorded time</div>
@@ -103,7 +107,13 @@
   <div id="gbar">
     <button id="play">⏸ pause</button>
     <label><input type="checkbox" id="Tpath" checked><span class="sw2" style="background:var(--path)"></span><span>device path</span></label>
-    <label><input type="checkbox" id="Tcam" checked><span class="sw2" style="background:var(--cam)"></span><span>camera frustums</span></label>
+    <span style="color:var(--muted);font-size:12.5px"><span class="sw2" style="background:var(--cam)"></span> camera frustums:</span>
+    <span class="seg" id="mseg">
+      <button data-m="all" class="on">all</button>
+      <button data-m="prog">progressive</button>
+      <button data-m="cur">current only</button>
+      <button data-m="off">off</button>
+    </span>
     <label><input type="checkbox" id="Tgrav" checked><span class="sw2" style="background:var(--grav)"></span><span>gravity</span></label>
     <label><input type="checkbox" id="Tends" checked><span>start / end</span></label>
     <span style="color:var(--muted);font-size:12.5px">colour by:</span>
@@ -163,7 +173,8 @@ const DATA_V="1";
 function decF(b,n){const s=atob(b),u=Uint8Array.from(s,c=>c.charCodeAt(0));const v=new DataView(u.buffer);
   const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=v.getFloat32(i*4,true);return a;}
 let ALL=null, D=null, RECID=null, CMODE="time";
-const T={path:1,cam:1,grav:1,ends:1,rot:0};
+const T={path:1,grav:1,ends:1,rot:0};
+let CAMMODE="all";   // all | prog | cur | off
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
 let yaw=-0.6, pitch=0.5, dist=1, DIST0=1, RAD=1, frame=0, playing=true, sel=null, hover=null;
 
@@ -178,6 +189,7 @@ function decode(id){
   const d={id, n:r.n, pos:decF(r.pos,r.n*3), t:decF(r.t,r.n), q:decF(r.q,r.n),
            nori:r.nori, ori:decF(r.ori,r.nori*12),
            ncam:r.ncam, cam:r.ncam?decF(r.cam,r.ncam*12):new Float32Array(0), cidx:r.cidx,
+           camt:r.camt||[], win:r.win||null,
            grav:r.grav, dur:r.dur, path:r.path, frames:r.frames, extent:r.extent,
            qmean:r.qmean, qmin:r.qmin, C:r.centre};
   let rad=0.001;
@@ -240,10 +252,20 @@ function draw(){
     }
   }
   // camera frustums at pipeline frames
-  if(T.cam&&D.ncam){
+  if(CAMMODE!=="off"&&D.ncam){
     const s=D.RAD*0.055;
-    const stride=D.ncam>70?2:1;
+    const now=D.t[frame];
+    // "current only" needs the frustum nearest the playhead in TIME, not in index: the extracted
+    // window covers a median 62% of the recording, so index and time are not proportional
+    let kcur=-1;
+    if(CAMMODE==="cur"&&D.camt.length){
+      let bd=1e9;
+      for(let k=0;k<D.camt.length;k++){const dd=Math.abs(D.camt[k]-now); if(dd<bd){bd=dd;kcur=k;}}
+    }
+    const stride=(D.ncam>70&&CAMMODE!=="cur")?2:1;
     for(let k=0;k<D.ncam;k+=stride){
+      if(CAMMODE==="prog"&&D.camt.length&&D.camt[k]>now) continue;
+      if(CAMMODE==="cur"&&k!==kcur) continue;
       const m=D.cam.subarray(k*12,k*12+12);
       const o=[m[3],m[7],m[11]];
       const ax=(c,l)=>[o[0]+m[c]*l, o[1]+m[c+4]*l, o[2]+m[c+8]*l];
@@ -256,12 +278,18 @@ function draw(){
                  f[1]+(rgt[1]-o[1])*a*0.55+(up[1]-o[1])*b*0.4,
                  f[2]+(rgt[2]-o[2])*a*0.55+(up[2]-o[2])*b*0.4];
         return proj(c[0],c[1],c[2]);});
-      ctx.strokeStyle="rgba(201,164,118,.75)";ctx.lineWidth=1.1;
+      let al=0.75;
+      if(CAMMODE==="prog"&&D.camt.length){
+        const age=(now-D.camt[k])/Math.max(now-D.camt[0],1e-3);
+        al=0.18+0.72*(1-Math.min(age,1));
+      } else if(CAMMODE==="cur") al=1;
+      ctx.strokeStyle="rgba(201,164,118,"+al.toFixed(2)+")";ctx.lineWidth=CAMMODE==="cur"?1.6:1.1;
       for(const c of corners){ if(!c)continue; ctx.beginPath();ctx.moveTo(P0[0],P0[1]);ctx.lineTo(c[0],c[1]);ctx.stroke(); }
       ctx.beginPath();
       corners.forEach((c,ii)=>{if(!c)return; ii?ctx.lineTo(c[0],c[1]):ctx.moveTo(c[0],c[1]);});
       ctx.closePath();ctx.stroke();
-      if(Pf){ctx.beginPath();ctx.arc(P0[0],P0[1],2.4,0,6.283);ctx.fillStyle="#c9a476";ctx.fill();}
+      if(Pf){ctx.beginPath();ctx.arc(P0[0],P0[1],CAMMODE==="cur"?3.4:2.4,0,6.283);
+        ctx.fillStyle="#c9a476";ctx.fill();}
       picks.push({sx:P0[0],sy:P0[1],kind:"RGB camera (c2w)",i:k,wx:o[0],wy:o[1],wz:o[2],
         m:Array.from(m), fidx:D.cidx&&D.cidx[k]});
     }
@@ -322,12 +350,18 @@ function loadRec(id){
   frame=0; sel=null; showSel();
   document.getElementById("scrub").max=D.n-1;
   document.getElementById("nowview").textContent="recording "+id+" · "+D.dur+" s · path "+D.path+
-    " m · "+D.ncam+" camera poses · MPS quality "+D.qmin.toFixed(2);
+    " m · "+D.ncam+" camera poses"+
+    (D.win?" spanning "+D.win[0].toFixed(1)+"–"+D.win[1].toFixed(1)+" s":"")+
+    " · MPS quality "+D.qmin.toFixed(2);
   document.querySelectorAll(".cell").forEach(c=>c.classList.toggle("on",c.dataset.rec===id));
   draw();
 }
 for(const k of Object.keys(T)){const el=document.getElementById("T"+k[0].toUpperCase()+k.slice(1));
   if(el)el.addEventListener("change",e=>{T[k]=e.target.checked?1:0;draw();redrawTiles();});}
+document.querySelectorAll("#mseg button").forEach(b=>b.addEventListener("click",()=>{
+  CAMMODE=b.dataset.m;
+  document.querySelectorAll("#mseg button").forEach(x=>x.classList.toggle("on",x===b));
+  draw();redrawTiles();}));
 document.querySelectorAll("#cseg button").forEach(b=>b.addEventListener("click",()=>{
   CMODE=b.dataset.c;
   document.querySelectorAll("#cseg button").forEach(x=>x.classList.toggle("on",x===b));
@@ -414,7 +448,7 @@ function drawTile(t){
     if(!p||!q)continue;
     cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(q[0],q[1]);
     cx.strokeStyle=colAt(d,i);cx.lineWidth=1.4;cx.stroke();}
-  if(T.cam&&d.ncam){cx.fillStyle="rgba(201,164,118,.85)";
+  if(CAMMODE!=="off"&&d.ncam){cx.fillStyle="rgba(201,164,118,.85)";
     for(let k=0;k<d.ncam;k+=3){const m=d.cam.subarray(k*12,k*12+12);
       const p=proj(m[3],m[7],m[11],st); if(p){cx.beginPath();cx.arc(p[0],p[1],1.5,0,6.283);cx.fill();}}}
   if(T.grav){const g=d.grav,L=d.RAD*0.5,n=Math.hypot(g[0],g[1],g[2])||1;
