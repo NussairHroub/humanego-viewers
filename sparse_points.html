@@ -618,6 +618,8 @@ function checkBlocked(){
   setInterval(()=>{ if(performance.now()-last>400){ const dt=performance.now()-last;
     last=performance.now(); if(playing&&D){acc+=dt;if(acc>55){acc=0;frame=(frame+1)%D.F;}}
     if(D)draw(); tickTiles(dt); } },200);
+  addEventListener("hashchange",()=>{const h=(location.hash||"").replace("#","");
+    if(PRE&&PRE.recs.includes(h)&&h!==RECID){loadRec(h);window.scrollTo({top:0,behavior:"smooth"});}});
   setTimeout(checkBlocked,800);
 })();
 </script>
