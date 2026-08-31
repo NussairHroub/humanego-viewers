@@ -66,7 +66,10 @@
   <code>[ type ǀ pose_in_ref (pos 3 + rot6d 6) ǀ hand_in_entity 9 ǀ flag ]</code>.
   It is the bridge between the scene's geometry and a vector, so both halves are shown together and
   <b>linked</b>: the geometry on the left is exactly what the numbers on the right encode.
-  <b>Click a cell</b> to see what it means, or click an entity in the 3D view to select its row.
+  Each entity is drawn as its <b>actual coordinate frame</b>, decoded from that row's own six rotation
+  channels \u2014 solid x and y as stored, dashed z because it is recovered by cross product rather than
+  stored. <b>Click a cell</b> to see what it means and light up the axis it feeds, or click an entity in
+  the 3D view to select its row.
   Channels that never change across the recording are drawn dead — for <i>cup&nbsp;→&nbsp;plate</i> that
   turns out to be most of the matrix.</p>
   <div class="stats">
@@ -137,6 +140,22 @@ function decF(b,n){const s=atob(b),u=Uint8Array.from(s,c=>c.charCodeAt(0));const
   const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=v.getFloat32(i*4,true);return a;}
 function decU(b){const s=atob(b);return Uint8Array.from(s,c=>c.charCodeAt(0));}
 const TYPE={0:"PAD",1:"HAND_L",2:"HAND_R",3:"OBJ_ANCHOR",4:"OBJ_OTHER"};
+// The 6 rotation channels ARE the pose: rotmat_to_o6d flattens R[:, :2] row-major, so the stored
+// order is [R00,R01,R10,R11,R20,R21]. Reshaping to (3,2) recovers the two columns and Gram-Schmidt
+// rebuilds the third. Verified against utils_math.o6d_to_rotmat: agreement 1e-7, and against the
+// entity's true rotation in the reference frame: 1e-6. The THIRD axis is not stored anywhere --
+// it is the cross product, which is the whole point of the 6D representation.
+function rot6dToMat(v){
+  let a1=[v[0],v[2],v[4]], a2=[v[1],v[3],v[5]];
+  const n1=Math.hypot(a1[0],a1[1],a1[2])+1e-8; const b1=a1.map(x=>x/n1);
+  const d=b1[0]*a2[0]+b1[1]*a2[1]+b1[2]*a2[2];
+  let r=[a2[0]-d*b1[0],a2[1]-d*b1[1],a2[2]-d*b1[2]];
+  const n2=Math.hypot(r[0],r[1],r[2])+1e-8; const b2=r.map(x=>x/n2);
+  const b3=[b1[1]*b2[2]-b1[2]*b2[1], b1[2]*b2[0]-b1[0]*b2[2], b1[0]*b2[1]-b1[1]*b2[0]];
+  return [b1,b2,b3];                       // columns: local x, y, z in the reference frame
+}
+const AXCOL=["#e46b6b","#7ad97a","#6da7ec"];       // x y z
+const AXCH={4:0,6:0,8:0, 5:1,7:1,9:1};             // which stored channel feeds which axis
 const TCOL={0:"#4a4944",1:"#7ad97a",2:"#7ad97a",3:"#c9a476",4:"#dddddd"};
 const GROUPS=[[0,1,"type"],[1,4,"pose_in_ref · position"],[4,10,"pose_in_ref · rot6d"],
               [10,19,"hand_in_entity"],[19,20,"flag"]];
@@ -144,8 +163,11 @@ const MEANING=(c,names)=>{
   if(c===0) return "Entity type id. Constant for a slot: it labels the row, it is not a measurement.";
   if(c>=1&&c<4) return "Position of this entity in the reference frame (cam0), z-scored by the dataset "+
     "position statistics. For a static object this never changes.";
-  if(c>=4&&c<10) return "Orientation as the first two columns of the rotation matrix (Zhou et al. 6D "+
-    "form), which avoids the discontinuities of Euler angles or quaternions.";
+  if(c>=4&&c<10) return "Orientation, stored as the first two COLUMNS of the rotation matrix "+
+    "(Zhou et al. 6D form, continuous where Euler angles and quaternions are not). Channels 4/6/8 "+
+    "are the local x axis, 5/7/9 the local y. The z axis is stored nowhere \u2014 it is recovered as "+
+    "the cross product, which is why the frame in the 3D view draws it dashed. Selecting one of "+
+    "these channels highlights the axis it feeds.";
   if(c>=10&&c<19) return "The HAND expressed in THIS entity's frame — position 3 then rot6d 6. This is the "+
     "relational part of the token, and the only part that moves for a static object.";
   return "Grasp flag: 0 open, 1 closed for a hand row; -1 for an object row.";
@@ -245,14 +267,31 @@ function drawGeo(){
         gx.fillText("hand_in_entity", mxp+6, myp-4); }
     }
   }
+  const L=DIST0*0.055;                       // axis length, scaled to the scene
   for(const s of live){
-    const tid=val(0,s,0)|0, p=proj(rawPos(frame,s)); if(!p) continue;
+    const tid=val(0,s,0)|0, o=rawPos(frame,s), p=proj(o); if(!p) continue;
     const on = sel && sel.s===s;
-    gx.beginPath(); gx.arc(p[0],p[1], on?7:5, 0, 6.283);
+    // the entity's actual orientation, decoded from its own six rotation channels
+    const R=rot6dToMat([val(frame,s,4),val(frame,s,5),val(frame,s,6),
+                        val(frame,s,7),val(frame,s,8),val(frame,s,9)]);
+    for(let a=0;a<3;a++){
+      const q=proj([o[0]+R[a][0]*L, o[1]+R[a][1]*L, o[2]+R[a][2]*L]); if(!q) continue;
+      // the z axis is derived by cross product, not stored -- drawn dashed to say so
+      const isDerived = (a===2);
+      const hi = on && sel && AXCH[sel.c]===a;
+      gx.beginPath(); gx.moveTo(p[0],p[1]); gx.lineTo(q[0],q[1]);
+      gx.strokeStyle=AXCOL[a]; gx.lineWidth=hi?3.4:(on?2.2:1.6);
+      gx.globalAlpha=hi?1:(on?0.95:0.7);
+      gx.setLineDash(isDerived?[3,3]:[]);
+      gx.stroke(); gx.setLineDash([]); gx.globalAlpha=1;
+      if(on){ gx.fillStyle=AXCOL[a]; gx.font="10px ui-monospace,Menlo,monospace";
+        gx.fillText("xyz"[a]+(isDerived?" (derived)":""), q[0]+4, q[1]+3); }
+    }
+    gx.beginPath(); gx.arc(p[0],p[1], on?5:3.5, 0, 6.283);
     gx.fillStyle=TCOL[tid]; gx.fill();
-    if(on){ gx.strokeStyle="#fff"; gx.lineWidth=2; gx.stroke(); }
+    if(on){ gx.strokeStyle="#fff"; gx.lineWidth=1.6; gx.stroke(); }
     gx.fillStyle=on?"#fff":"#a09d95"; gx.font="11px ui-monospace,Menlo,monospace";
-    gx.fillText(TYPE[tid].toLowerCase()+"  (slot "+s+")", p[0]+10, p[1]+4);
+    gx.fillText(TYPE[tid].toLowerCase()+"  (slot "+s+")", p[0]+9, p[1]-8);
   }
   document.getElementById("geolbl").textContent =
     "reference frame cam0 · "+live.length+" live rows, "+(D.T-live.length)+" PAD";
