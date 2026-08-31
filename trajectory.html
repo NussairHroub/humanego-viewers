@@ -124,7 +124,7 @@
       <button data-c="flat">flat</button>
     </span>
     <label><input type="checkbox" id="Trot"><span>auto-rotate</span></label>
-    <button id="reset">reset view</button>
+    <button id="reset" title="restore every control and replay from the first pose">reset all</button>
   </div>
   <div class="stage">
     <div class="cvcard">
@@ -356,7 +356,7 @@ function loadRec(id){
   document.querySelectorAll(".cell").forEach(c=>c.classList.toggle("on",c.dataset.rec===id));
   draw();
 }
-for(const k of Object.keys(T)){const el=document.getElementById("T"+k[0].toUpperCase()+k.slice(1));
+for(const k of Object.keys(T)){const el=document.getElementById("T"+k);
   if(el)el.addEventListener("change",e=>{T[k]=e.target.checked?1:0;draw();redrawTiles();});}
 document.querySelectorAll("#mseg button").forEach(b=>b.addEventListener("click",()=>{
   CAMMODE=b.dataset.m;
@@ -385,9 +385,25 @@ cv.addEventListener("wheel",e=>{e.preventDefault();
   dist=Math.max(DIST0*0.25,Math.min(DIST0*4,dist*(1+Math.sign(e.deltaY)*0.09)));draw();},{passive:false});
 document.getElementById("scrub").addEventListener("input",e=>{frame=+e.target.value;draw();});
 document.getElementById("play").addEventListener("click",e=>{playing=!playing;e.target.textContent=playing?"⏸ pause":"▶ play";});
+// see sparse_points.html: reset restores the load-time state and replays from the first pose
+function resetAll(){
+  yaw=-0.6; pitch=0.5; dist=DIST0; drag=null;
+  frame=0; acc=0;
+  playing=true; document.getElementById("play").textContent="⏸ pause";
+  sel=null; hover=null; showSel();
+  const defs={path:1,grav:1,ends:1,rot:0};
+  for(const k in defs){ T[k]=defs[k];
+    const el=document.getElementById("T"+k); if(el)el.checked=!!defs[k]; }
+  CAMMODE="all";
+  document.querySelectorAll("#mseg button").forEach(x=>x.classList.toggle("on",x.dataset.m==="all"));
+  CMODE="time";
+  document.querySelectorAll("#cseg button").forEach(x=>x.classList.toggle("on",x.dataset.c==="time"));
+  document.getElementById("scrub").value=0;
+  for(const t of tiles){ t.yaw=-0.6; t.pitch=0.5; t.dist=t.dist0; t.drag=null; if(t.sized)drawTile(t); }
+  draw();
+}
 document.getElementById("reset").addEventListener("click",e=>{
-  yaw=-0.6;pitch=0.5;dist=DIST0; sel=null;hover=null;showSel(); drag=null; draw();
-  for(const t of tiles){t.yaw=-0.6;t.pitch=0.5;t.dist=t.dist0;t.drag=null; if(t.sized)drawTile(t);}
+  resetAll();
   const b=e.currentTarget, was=b.textContent;
   b.textContent="reset \u2713"; setTimeout(()=>{b.textContent=was;},700);});
 addEventListener("keydown",e=>{const t=e.target; if(!D)return;
