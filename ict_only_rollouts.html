@@ -83,15 +83,16 @@
       <div class="switch"><button class="on" data-src="rollout_videos_ict_only/rollout_188_20260831_213944_cam.mp4">camera</button><button data-src="rollout_videos_ict_only/rollout_188_20260831_213944.mp4">all panels</button></div>
       <video muted loop playsinline controls preload="metadata" src="rollout_videos_ict_only/rollout_188_20260831_213944_cam.mp4"></video>
       <div class="cap"><span><b>rollout 188</b> <span class="t">21:39</span></span>
-        <span>11 steps · 63 s real · 5.1 s/step · done 0.13</span></div>
+        <span>11 steps · 63 s real · 6.3 s/step · done 0.13</span></div>
       <p class="note">Same checkpoint, same scene, run again two minutes later: grasp at move 67, cup down on
-      the plate, 9.3 m of path. One 17.7 s pause sits between steps 5 and 6 — playback is per policy step, so
-      the pause is invisible in the video but is counted in the elapsed-seconds header.</p>
+      the plate, 9.3 m of path. Its 6.3 s/step is an average inflated by a single 17.7 s pause between steps 5
+      and 6; the median interval is 5.0 s, the same as the other run. Playback is per policy step, so the
+      pause is invisible in the video but is counted in the elapsed-seconds header.</p>
     </div>
   </div>
   <p class="foot">Rendered from the per-step frames in <code>results/rollout_187_*</code> and
   <code>results/rollout_188_*</code> on the rig; the empty bottom-left panel is the loop's own behaviour, not
-  a missing file. Related: <a href="rollout_camera_gallery.html">the 19 earlier rollouts</a> ·
+  a missing file. Related: <a href="rollout_gallery.html">the full rollout gallery</a> ·
   <a href="orientation.html">cup on its side</a> · <a href="ict.html">what an ICT actually contains</a> ·
   <a href="index.html">all viewers &amp; methods</a>.</p>
 </div>

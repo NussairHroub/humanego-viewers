@@ -53,13 +53,10 @@
   Use the <b>show</b> menu to view one group at a time. For the same runs with detections, policy input and
   gripper overlay, use <a href="rollout_gallery.html">the four-panel view</a>.</p>
   <div class="stats">
-    <div><b>21</b>rollouts</div><div><b>12</b>HumanEgo baseline</div><div><b>6.6 s</b>per policy step (HumanEgo baseline)</div><div><b>7</b>PcdV1</div><div><b>4.8 s</b>per policy step (PcdV1)</div><div><b>2</b>Orientation</div><div><b>5.5 s</b>per policy step (Orientation)</div>
-    <div><b>0.05</b>highest done-probability (threshold 0.80)</div>
+    <div><b>23</b>rollouts</div><div><b>12</b>HumanEgo baseline</div><div><b>6.6 s</b>per policy step (HumanEgo baseline)</div><div><b>7</b>PcdV1</div><div><b>4.8 s</b>per policy step (PcdV1)</div><div><b>2</b>ICT rollouts</div><div><b>5.6 s</b>per policy step (ICT)</div><div><b>2</b>Orientation</div><div><b>5.5 s</b>per policy step (Orientation)</div>
+    <div><b>0.13</b>highest done-probability (threshold 0.80)</div>
   </div>
-  <p class="note"><b>Read the done-probability before drawing conclusions.</b> Across all 21 runs the
-  policy's termination head never exceeded 0.05 against a 0.80 threshold — no episode ended because the
-  policy judged the task complete; each was stopped by the operator. Whether the motion itself succeeded is a
-  separate judgement, and one these videos are meant to support.</p>
+  <p class="note"><b>Read the done-probability before drawing conclusions.</b> On the August&nbsp;24 and 25 runs the policy's termination head never exceeded 0.05 against a 0.80 threshold; the two ICT rollouts peak at 0.13 and were still climbing when they were stopped. So no episode in this gallery ended because the policy judged the task complete — every one was ended by the operator. Whether the motion itself succeeded is a separate judgement, and one these videos are meant to support.</p>
   <p class="viewsw">view: <a href="rollout_gallery.html">all panels</a>
   <span class="on">camera only</span></p>
   <div id="gbar">
@@ -73,7 +70,7 @@
       <option value="all" selected>all rollouts</option>
       <option value="baseline">baseline only</option>
       <option value="pcd">point policy only</option>
-      <option value="orientation">orientation only</option></select></label>
+      <option value="orientation">orientation only</option>      <option value="ict">ICT rollouts</option></select></label>
   </div>
 
   <section data-g="baseline">
@@ -115,8 +112,20 @@
     <div class="cell"><video muted loop playsinline controls preload="metadata" src="rollout_videos_orientation/rollout_170_20260825_153325_cam.mp4"></video><div class="cap"><span><b>rollout 170</b> <span class="t">15:33</span></span><span>7 steps · 33 s real · 5.5 s/step · done 0.05</span></div></div>
     </div>
   </section>
+  <section data-g="ict">
+    <h2>ICT rollouts — no pixels at deploy</h2>
+    <p class="gsub">31&nbsp;August. The HumanEgo recipe trained with <code>img_name: None</code>, so its
+    vision branch only ever saw all-zero images; at deploy <code>ICTPolicy</code> sets
+    <code>zero_image</code>, the loop skips detection-time inpainting, and the interaction tokens are the only thing carrying information into the
+    network. Both runs complete the transfer. Also on its own page:
+    <a href="ict_only_rollouts.html">the ICT-only deck</a>.</p>
+    <div class="grid">
+    <div class="cell" data-g="ict"><video muted loop playsinline controls preload="metadata" src="rollout_videos_ict_only/rollout_187_20260831_213730_cam.mp4"></video><div class="cap"><span><b>rollout 187</b> <span class="t">21:37</span></span><span>14 steps · 65 s real · 5.0 s/step · done 0.13</span></div></div>
+    <div class="cell" data-g="ict"><video muted loop playsinline controls preload="metadata" src="rollout_videos_ict_only/rollout_188_20260831_213944_cam.mp4"></video><div class="cap"><span><b>rollout 188</b> <span class="t">21:39</span></span><span>11 steps · 63 s real · 6.3 s/step · done 0.13</span></div></div>
+    </div>
+  </section>
   <p class="foot">Rendered from the per-step frames saved by <code>run_inference.py</code> into each
-  <code>results/rollout_*</code> folder. Related: <a href="orientation.html">orientation deck</a> ·
+  <code>results/rollout_*</code> folder. Related: <a href="ict_only_rollouts.html">ICT-only deck</a> · <a href="orientation.html">orientation deck</a> ·
   <a href="presentation.html">reconstructed demonstrations</a> ·
   <a href="index.html">all viewers &amp; methods</a>.</p>
 </div>
