@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ICT-only Rollouts — cup_plate_02</title>
+<style>
+  :root{--bg:#12110d;--card:#1c1b17;--ink:#e9e7e2;--muted:#a09d95;--line:#3a3934;--accent:#6da7ec}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:40px 22px 80px}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.01em}
+  .nav{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 14px}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:4px 11px;
+    border:1px solid var(--line);border-radius:16px}
+  .nav a.on{color:var(--ink);border-color:#5a594f;background:var(--card)}
+  .sub{color:var(--muted);font-size:15px;max-width:880px;margin:0 0 16px}
+  .sub a{color:var(--accent)}
+  .stats{display:flex;gap:26px;flex-wrap:wrap;margin:16px 0 20px;color:var(--muted);font-size:13.5px}
+  .stats b{color:var(--ink);font-size:17px;display:block;font-variant-numeric:tabular-nums}
+  .callout{background:var(--card);border:1px solid var(--line);border-left:3px solid #a8792e;
+    border-radius:10px;padding:11px 15px;font-size:13.5px;color:var(--muted);max-width:880px;margin:0 0 12px}
+  .callout.blue{border-left-color:#6da7ec}
+  .callout b{color:var(--ink)}
+  .callout code,.foot code,.sub code{background:#26251f;border:1px solid var(--line);border-radius:5px;
+    padding:0 4px;font-size:12.5px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:18px;margin-top:22px}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .cell video{display:block;width:100%;background:#000}
+  .switch{display:flex;gap:5px;padding:10px 13px 0}
+  .switch button{background:#2b2a26;border:1px solid #4a4944;color:var(--muted);border-radius:8px;
+    padding:3px 11px;cursor:pointer;font-size:12.5px}
+  .switch button.on{color:var(--ink);border-color:#6da7ec;background:#22262c}
+  .cap{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    padding:9px 13px 4px;font-size:12px;color:var(--muted)}
+  .cap b{color:var(--ink);font-size:15px}
+  .cap .t{font-size:11.5px;opacity:.75}
+  .note{margin:0;padding:0 13px 13px;font-size:13px;color:var(--muted)}
+  .foot{color:var(--muted);font-size:12.5px;margin-top:34px;border-top:1px solid var(--line);
+    padding-top:14px;max-width:880px}
+  .foot a{color:var(--accent)}
+</style></head><body>
+<div class="wrap">
+  <h1>ICT-only Rollouts</h1>
+  <nav class="nav"><a href="rollout_camera_gallery.html">Robot Rollouts</a><a href="orientation.html">Orientation</a><a href="ict_only_rollouts.html" class="on">ICT-only Rollouts</a><a href="presentation.html">Dynamic Scenes</a><a href="sparse_points.html">Sparse Points</a><a href="trajectory.html">Camera Trajectory</a><a href="dino.html">DINO Boxes</a><a href="sam.html">SAM Masks</a><a href="ict.html">ICT Tokens</a><a href="collected_demos.html">Collected Demos</a><a href="index.html">All Viewers</a></nav>
+  <p class="sub">Two closed-loop runs on the ALOHA rig, 31&nbsp;August&nbsp;2026, driven by a policy that
+  <b>never sees pixels</b>. The checkpoint is the HumanEgo recipe trained with <code>img_name: None</code>
+  (<code>runs/cup_plate_02/001_HumanEgo_baseline_NoRGB</code>) — its vision branch only ever saw all-zero
+  images, so the only thing carrying information into the network is the
+  <a href="ict.html">Interaction-Centric Token</a> matrix: hand pose, object poses, grasp state. Both runs
+  complete the <i>cup&nbsp;→&nbsp;plate</i> transfer. Each tile starts on the plain camera view; switch to
+  <b>all panels</b> for the detections and the gripper overlay. Playback is one frame per policy step
+  (~25× real time) — the header carries true elapsed seconds.</p>
+  <div class="stats">
+    <div><b>2</b>runs</div>
+    <div><b>25</b>policy steps</div>
+    <div><b>5.0 s</b>per policy step (median)</div>
+    <div><b>2/2</b>reached and grasped the cup</div>
+    <div><b>0.13</b>highest done-probability (threshold 0.80)</div>
+  </div>
+  <p class="callout blue"><b>Why the “policy input” panel is empty.</b> When the checkpoint was trained on
+  zero images, feeding it a real inpainted frame at deploy would be an out-of-distribution input that fails
+  silently — so <code>ICTPolicy</code> sets <code>zero_image</code>, the loop skips LaMa inpainting and the
+  gripper render entirely, and no clean image is ever produced. Strictly this is <i>not</i>
+  <code>obs_mode="ict_only"</code>: the visual tokens still exist and context-norm still sees them, they
+  just carry zeros. Same observation at deploy, different architecture on paper.</p>
+  <p class="callout"><b>Neither run ended on the policy's own judgement.</b> The termination head peaked at
+  0.13 against a 0.80 threshold and was still climbing when the operator stopped each episode — so “success”
+  here means the transfer was executed, not that the policy knew it was finished. The
+  <code>obs_mode="ict_only"</code> checkpoint tested on 25&nbsp;August shows the opposite failure of the same
+  head: on this rig it fired 0.96 at the very first step, before the gripper had closed, and stopped the
+  episode after one decision. Pose-only tokens leave that head with no reliable signal in either direction.</p>
+  <div class="grid">
+    <div class="cell">
+      <div class="switch"><button class="on" data-src="rollout_videos_ict_only/rollout_187_20260831_213730_cam.mp4">camera</button><button data-src="rollout_videos_ict_only/rollout_187_20260831_213730.mp4">all panels</button></div>
+      <video muted loop playsinline controls preload="metadata" src="rollout_videos_ict_only/rollout_187_20260831_213730_cam.mp4"></video>
+      <div class="cap"><span><b>rollout 187</b> <span class="t">21:37</span></span>
+        <span>14 steps · 65 s real · 5.0 s/step · done 0.13</span></div>
+      <p class="note">Reaches straight for the cup and closes the gripper 71 controller moves in — about
+      3.5 s at 20 Hz — then carries it onto the plate over 8.7 m of commanded end-effector path. Still
+      holding the cup when the run was stopped.</p>
+    </div>
+    <div class="cell">
+      <div class="switch"><button class="on" data-src="rollout_videos_ict_only/rollout_188_20260831_213944_cam.mp4">camera</button><button data-src="rollout_videos_ict_only/rollout_188_20260831_213944.mp4">all panels</button></div>
+      <video muted loop playsinline controls preload="metadata" src="rollout_videos_ict_only/rollout_188_20260831_213944_cam.mp4"></video>
+      <div class="cap"><span><b>rollout 188</b> <span class="t">21:39</span></span>
+        <span>11 steps · 63 s real · 5.1 s/step · done 0.13</span></div>
+      <p class="note">Same checkpoint, same scene, run again two minutes later: grasp at move 67, cup down on
+      the plate, 9.3 m of path. One 17.7 s pause sits between steps 5 and 6 — playback is per policy step, so
+      the pause is invisible in the video but is counted in the elapsed-seconds header.</p>
+    </div>
+  </div>
+  <p class="foot">Rendered from the per-step frames in <code>results/rollout_187_*</code> and
+  <code>results/rollout_188_*</code> on the rig; the empty bottom-left panel is the loop's own behaviour, not
+  a missing file. Related: <a href="rollout_camera_gallery.html">the 19 earlier rollouts</a> ·
+  <a href="orientation.html">cup on its side</a> · <a href="ict.html">what an ICT actually contains</a> ·
+  <a href="index.html">all viewers &amp; methods</a>.</p>
+</div>
+<script>
+document.querySelectorAll(".cell").forEach(cell => {
+  const v = cell.querySelector("video");
+  cell.querySelectorAll(".switch button").forEach(b => b.addEventListener("click", () => {
+    if (b.classList.contains("on")) return;
+    cell.querySelectorAll(".switch button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    const playing = !v.paused;
+    v.src = b.dataset.src;
+    v.load();
+    if (playing) v.play().catch(() => {});
+  }));
+});
+const io = new IntersectionObserver(es => {
+  for (const e of es) e.isIntersecting ? e.target.play().catch(() => {}) : e.target.pause();
+}, {rootMargin: "150px"});
+document.querySelectorAll("video").forEach(v => io.observe(v));
+</script></body></html>

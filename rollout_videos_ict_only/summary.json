@@ -1,0 +1,40 @@
+[
+  {
+    "moves": 541,
+    "path_cm": 868.636,
+    "max_grasp": 1.0080475807189941,
+    "final_grasp": 0.9988694190979004,
+    "ckpt": "./runs/cup_plate_02/001_HumanEgo_baseline_NoRGB/latest.pt",
+    "logged_obs_mode": "rgb_ict",
+    "control_hz": 20.0,
+    "rec": "rollout_187_20260831_213730",
+    "policy": "HumanEgo NoRGB (ict only)",
+    "steps": 14,
+    "span": 65.00137162208557,
+    "final_done": 0.12828461746497002,
+    "max_done": 0.12828461746497002,
+    "first_done": 0.02370579885373703,
+    "sec_per_step": 5.000105509391198,
+    "done_threshold": 0.8,
+    "self_terminated": false
+  },
+  {
+    "moves": 431,
+    "path_cm": 927.208,
+    "max_grasp": 1.0142829418182373,
+    "final_grasp": 1.0009500980377197,
+    "ckpt": "./runs/cup_plate_02/001_HumanEgo_baseline_NoRGB/latest.pt",
+    "logged_obs_mode": "rgb_ict",
+    "control_hz": 20.0,
+    "rec": "rollout_188_20260831_213944",
+    "policy": "HumanEgo NoRGB (ict only)",
+    "steps": 11,
+    "span": 63.471264362335205,
+    "final_done": 0.12526909485245968,
+    "max_done": 0.12526909485245968,
+    "first_done": 0.02348191547777447,
+    "sec_per_step": 6.347126436233521,
+    "done_threshold": 0.8,
+    "self_terminated": false
+  }
+]
